@@ -1,0 +1,80 @@
+dist: bionic
+
+deploy:
+  provider: pypi
+  user: "__token__"
+  password:
+    secure: ZtlduphZrPMDSA1wJPOH4MN03WmvV73mZF4gADmWcHEksNxeZYD744UqUa95pLnV6XGZgDxRNIls7ZcCjgNkkzvlDKRVdCAhrML0QvCn6YCQF5oH/hUjWhKy3mmvR6zcdYu/pGN0nYax2Ls8SmJo05MK4qAjIunJqoxbEfMS0EftqQzf4VDpUBNtvjn00k2IqNLM2pnAPa4BWFoQQTsgaXKzs4z2z2AjlR+7T08l3yXWTQahYITffb9O1dN5uXi2iKeR0ctgfonS26qgR3MyD4v56GUZGVX9PLYJMTYvJRBd3VaQ38vy7n3J6xCUeXGALOSb6+WcROcopoxE+m/5px9nVp28rc5C+bw6V2h3nzIYxRLZQV6pjGWV+t7p6vbnG772DZwsz1MWWtWEd2wmV18mS/h/rv6ZMiXYKdRI25v1WQgXzXn/vxDpZNnqWskrvBwrrEbnzrV3v6qR4rgYOaS+ihlCYSrh4tCvCWGodZ9A36LboC52mXqq1dSTBy+Di7C8vmCpy8sU9AdiRsT5cRdVvDEN7JQcTLHuwAZpy+2GYxULpGAF6do5PMzrJ0lGBic9MwxA1e++Bj1PoqXKjRgVYMyiPZ88oOj6dWei8axuTWqmZWpu8BLdnRAvdMnTf/VaNaPlYdpe8xgVmuQLzHDLlQu4Pb23djRtnSHX66s=
+  on:
+    tags: true
+    condition: $RELEASER = "1"
+
+language: python
+
+git:
+  submodules: true
+
+addons:
+  apt:
+    packages:
+    - build-essential
+    - git
+    - python
+    - python-pip
+    - python-virtualenv
+
+matrix:
+  include:
+    - os: linux
+      env: DEBIAN_FRONTEND=noninteractive
+      python: "3.6"
+    - os: linux
+      env: DEBIAN_FRONTEND=noninteractive
+      python: "3.7"
+    - os: linux
+      env: DEBIAN_FRONTEND=noninteractive RELEASER=1
+      python: "3.8"
+    - os: linux
+      env: DEBIAN_FRONTEND=noninteractive
+      python: "pypy3"
+    - os: osx
+      env: CPYTHON_VERSION=3.6.8 PYTHON_PATH=/usr/local/bin/python3.6
+      language: generic
+    - os: osx
+      env: CPYTHON_VERSION=3.7.6 PYTHON_PATH=/usr/local/bin/python3.7
+      language: generic
+    - os: osx
+      env: CPYTHON_VERSION=3.8.1 PYTHON_PATH=/usr/local/bin/python3.8
+      language: generic
+    - os: osx
+      env: PYPY=1 PYTHON_PATH=~/pypy3.6-v7.3.0-osx64/bin/pypy3
+      language: generic
+
+install:
+  - |
+    case $TRAVIS_OS_NAME in
+      linux)
+        sudo pip install pipenv;
+        pipenv install --python `which python` --skip-lock;
+        ;;
+      osx)
+        brew update;
+        pip install pipenv;
+        ulimit -n 1200;
+        pwd;
+        if [ ! -z "$PYPY" ]; then
+          cd ~;
+          curl -s -L "https://bitbucket.org/pypy/pypy/downloads/pypy3.6-v7.3.0-osx64.tar.bz2" | tar xvj;
+          cd $TRAVIS_BUILD_DIR;
+        else
+          curl -s -L "https://www.python.org/ftp/python/$CPYTHON_VERSION/python-$CPYTHON_VERSION-macosx10.9.pkg" --output python.pkg;
+          sudo installer -pkg python.pkg -target /;
+        fi
+        pipenv install --python "$PYTHON_PATH" --skip-lock;
+        ;;
+      esac
+
+script:
+  - pipenv run pip install pytest numpy
+  - pipenv run python setup.py install
+  - pipenv run pytest --verbose test.py

@@ -1,0 +1,3 @@
+[submodule "src/embedded"]
+	path = src/embedded
+	url = https://github.com/elijahr/embedded.git
