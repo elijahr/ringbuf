@@ -11,7 +11,7 @@ pip install ringbuf
 
 ## Usage
 
-See the [tests](https://github.com/elijahr/aiolo/blob/master/tests/main.py).
+See the [tests](https://github.com/elijahr/ringbuf/blob/master/tests/main.py).
 
 ## Supported platforms
 
