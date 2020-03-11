@@ -52,14 +52,14 @@ class BuildExt(build_ext):
 
     def initialize_options(self):
         self.single_version_externally_managed = False
-        super(BuildExt, self).initialize_options()
+        build_ext.initialize_options(self)
         args = get_args()
         self.debug = args.debug
         self.single_version_externally_managed = False
 
     def finalize_options(self):
         self.single_version_externally_managed = False
-        super(BuildExt, self).finalize_options()
+        build_ext.finalize_options(self)
         self.single_version_externally_managed = False
 
 
@@ -70,14 +70,14 @@ class Install(install):
 
     def initialize_options(self):
         self.single_version_externally_managed = False
-        super(Install, self).initialize_options()
+        install.initialize_options(self)
         args = get_args()
         self.debug = args.debug
         self.single_version_externally_managed = False
 
     def finalize_options(self):
         self.single_version_externally_managed = False
-        super(Install, self).finalize_options()
+        install.finalize_options(self)
         self.single_version_externally_managed = False
 
 
@@ -145,9 +145,10 @@ def get_ext_modules():
 
 setup(
     name='ringbuf',
-    version='1.0.0',
+    version='1.0.1',
     description='A fast, lock free, ring buffer for Python.',
     long_description=get_readme(),
+    long_description_content_type="text/markdown",
     url='https://github.com/elijahr/ringbuf',
     author='Elijah Shaw-Rutschman',
     author_email='elijahr@gmail.com',
