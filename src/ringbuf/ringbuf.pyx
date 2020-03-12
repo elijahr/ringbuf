@@ -22,7 +22,7 @@ class Array(_Array):
         cdef object view = memoryview(value)
         try:
             if view.format != self._format:
-                raise TypeError('Mismatched format (got %r, expected %r)' % (format, self._format))
+                raise TypeError('Mismatched format (got %r, expected %r)' % (view.format, self._format))
             self.memview[item] = value
         finally:
             del view
@@ -37,7 +37,7 @@ cdef class RingBuffer:
         self.format = format
         self.itemsize = struct.calcsize(format)
         self.buf = new ContiguousRingbuffer[char]()
-        self.resize(capacity * self.itemsize)
+        self.resize(capacity)
 
     def __init__(self, format: str, capacity: int):
         ...
@@ -48,8 +48,10 @@ cdef class RingBuffer:
     cpdef void resize(RingBuffer self, const size_t size):
         cdef:
             bint resized
+            # Allocate twice the expected maximum size, to prevent underflow when wrapping
+            size_t sz = size * self.itemsize * 2
         with nogil:
-            resized = self.buf.resize(size)
+            resized = self.buf.resize(sz)
         if not resized:
             raise Overflow
 
@@ -69,6 +71,9 @@ cdef class RingBuffer:
 
         if bytesize <= 0:
             raise ValueError('Invalid shape %s' % repr(shape))
+
+        if (bytesize / self.itemsize) > self.available:
+            raise Overflow
 
         bs = <size_t>bytesize
 
@@ -156,7 +161,11 @@ cdef class RingBuffer:
             size_t capacity
         with nogil:
             capacity = self.buf.capacity()
-        return int(capacity / self.itemsize)
+        return int((capacity / self.itemsize) / 2)
+
+    @property
+    def available(RingBuffer self) -> int:
+        return self.capacity - self.size
 
     @property
     def is_lock_free(RingBuffer self) -> bool:

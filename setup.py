@@ -145,7 +145,7 @@ def get_ext_modules():
 
 setup(
     name='ringbuf',
-    version='1.0.2',
+    version='1.0.3',
     description='A fast, lock free, ring buffer for Python.',
     long_description=get_readme(),
     long_description_content_type="text/markdown",
