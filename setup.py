@@ -30,7 +30,6 @@ except ImportError:
 
 DIR = os.path.dirname(__file__)
 MODULE_PATH = os.path.join(DIR, 'src', 'ringbuf')
-EMBEDDED_PATH = os.path.join(DIR, 'src', 'embedded')
 
 
 def get_args():
@@ -106,28 +105,28 @@ def get_package_data():
 def get_ext_modules():
     args = get_args()
     ext_modules = []
-    include_dirs = [os.path.abspath(d) for d in (DIR, MODULE_PATH, EMBEDDED_PATH)]
+    include_dirs = [os.path.abspath(d) for d in (DIR, MODULE_PATH)]
 
     for path in itertools.chain(
             glob.glob(os.path.join(MODULE_PATH, '*.pyx'))):
         module_name = path.replace(MODULE_PATH, 'ringbuf').replace('/', '.').replace('.pyx', '')
         sources = [path]
-        # headers = []
         extra_compile_args = []
         extra_link_args = []
+        libraries = []
 
         if module_name == 'ringbuf.ringbuf':
-            # headers.append(os.path.join(EMBEDDED_PATH, 'RingBuffer', 'ContiguousRingbuffer.hpp'))
             extra_compile_args += ['-std=c++11']
             extra_link_args += ['-std=c++11']
+            libraries += ['boost_system']
 
         ext_modules.append(Extension(
             module_name,
             sources=sources,
-            # headers=headers,
             include_dirs=include_dirs,
             extra_compile_args=extra_compile_args,
             extra_link_args=extra_link_args,
+            libraries=libraries
         ))
 
     compile_time_env = get_cython_compile_time_env(
@@ -146,7 +145,7 @@ def get_ext_modules():
 setup(
     name='ringbuf',
     version='1.0.3',
-    description='A fast, lock free, ring buffer for Python.',
+    description='A lock-free ring buffer for Python.',
     long_description=get_readme(),
     long_description_content_type="text/markdown",
     url='https://github.com/elijahr/ringbuf',

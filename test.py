@@ -2,7 +2,8 @@
 import numpy as np
 import pytest
 
-from ringbuf import RingBuffer, Overflow, Underflow
+from ringbuf import RingBuffer, Underflow
+from ringbuf.ringbuf import _test_callback_void_ptr
 from ringbuf.libc_constants import SCHAR_MIN, SCHAR_MAX, UCHAR_MAX, SHRT_MIN, SHRT_MAX, USHRT_MAX, INT_MIN, \
     INT_MAX, UINT_MAX, LONG_MIN, LONG_MAX, ULONG_MAX, LLONG_MIN, LLONG_MAX, ULLONG_MAX, FLT_MIN, FLT_MAX, DBL_MIN, \
     DBL_MAX
@@ -21,17 +22,13 @@ def _expected():
             ('q', LLONG_MIN, LLONG_MAX),
             ('Q', 0, ULLONG_MAX),
     ):
-        arr = np.linspace(start, stop, num=2**16, dtype=np.dtype(format))
-        yield arr
-        yield arr.reshape((int(len(arr) / 2), 2))
+        yield np.linspace(start, stop, num=2**16, dtype=np.dtype(format))
 
     for format, start, stop in (
             ('f', FLT_MIN, FLT_MAX),
             ('d', DBL_MIN, DBL_MAX),
     ):
-        arr = np.linspace(start, stop, num=2**16, dtype=np.dtype(format))
-        yield arr
-        yield arr.reshape((int(len(arr) / 2), 2))
+        yield np.linspace(start, stop, num=2**16, dtype=np.dtype(format))
 
 
 @pytest.fixture(params=tuple(_expected()), ids=lambda e: '%s-%r' % (e.dtype.char, e.shape))
@@ -39,70 +36,96 @@ def expected(request):
     return request.param
 
 
-def test_buffer(expected):
+def test_push_pop(expected):
     capacity = expected.size
 
     buffer = RingBuffer(format=expected.dtype.char, capacity=capacity)
+    assert buffer.is_lock_free
 
-    assert buffer.size == 0
-    assert buffer.capacity == capacity
+    assert buffer.read_available == 0
+    assert buffer.write_available == capacity
 
-    # peek/poke 0 raises a ValueError
-    for shape in (0, (0,)):
-        with pytest.raises(ValueError):
-            buffer.peek(shape)
-        with pytest.raises(ValueError):
-            with buffer.poke(shape):
-                ...
+    # test full write
+    remaining = buffer.push(expected)
+    assert remaining is None
+    assert buffer.read_available == capacity
+    assert buffer.write_available == 0
 
-    # peek 1 raises underflow
-    for shape in (1, (1, )):
-        with pytest.raises(Underflow):
-            buffer.peek(shape)
+    # test full read
+    assert np.array_equal(
+        np.array(buffer.pop(capacity)),
+        expected)
+    assert buffer.read_available == 0
+    assert buffer.write_available == capacity
 
-    with buffer.poke(expected.shape) as data:
-        assert data.shape == expected.shape
-        data[:] = expected
+    # test writing chunks
+    prev_read_available = 0
+    for chunk in np.array_split(expected, 6):
+        remaining = buffer.push(chunk)
+        assert remaining is None
+        assert buffer.read_available == prev_read_available + len(chunk)
+        prev_read_available += len(chunk)
 
-    assert np.array_equal(buffer.peek(expected.shape), expected)
-    assert buffer.size == buffer.capacity
+    assert buffer.read_available == capacity
+    assert buffer.write_available == 0
 
-    # buffer is full
-    with pytest.raises(Overflow):
-        with buffer.poke((1,)):
-            ...
+    # test reading chunks
+    prev_write_available = 0
+    for chunk in np.array_split(expected, 6):
+        assert np.array_equal(
+            np.array(buffer.pop(len(chunk))),
+            chunk)
+        assert buffer.write_available == prev_write_available + len(chunk)
+        prev_write_available += len(chunk)
 
-    chunks = np.split(expected, 4)
-    data = buffer.read(chunks[0].shape)
-    assert buffer.size == buffer.capacity * (3/4)
-    assert data.shape == chunks[0].shape
-    assert np.array_equal(data, chunks[0])
+    # test reading more than available
+    buffer.push(expected[:10])
+    assert np.array_equal(
+        np.array(buffer.pop(capacity)),
+        expected[:10])
 
-    data = buffer.read(chunks[1].shape)
-    assert buffer.size == buffer.capacity * (1/2)
-    assert data.shape == chunks[1].shape
-    assert np.array_equal(data, chunks[1])
+    # teest reading more than capacity
+    buffer.push(expected)
+    assert np.array_equal(
+        np.array(buffer.pop(capacity + 123)),
+        expected)
 
-    data = buffer.read(chunks[2].shape)
-    assert buffer.size == buffer.capacity * (1/4)
-    assert data.shape == chunks[2].shape
-    assert np.array_equal(data, chunks[2])
 
-    with buffer.poke(chunks[0].shape) as data:
-        assert data.shape == chunks[0].shape
-        data[:] = chunks[0]
-
-    assert buffer.size == buffer.capacity * (1/2)
-
-    data = buffer.read(chunks[3].shape)
-    assert buffer.size == buffer.capacity * (1/4)
-    assert data.shape == chunks[3].shape
-    assert np.array_equal(data, chunks[3])
-
-    data = buffer.read(chunks[0].shape)
-    assert buffer.size == 0
-    assert data.shape == chunks[0].shape
-    assert np.array_equal(data, chunks[0])
-
+def test_underflow():
+    buffer = RingBuffer(format='b', capacity=1)
     with pytest.raises(Underflow):
-        buffer.read(chunks[0].shape)
+        buffer.pop(1)
+
+
+def test_overflow():
+    buffer = RingBuffer(format='B', capacity=7)
+    remaining = buffer.push(b'spam')
+    assert remaining is None
+    remaining = buffer.push(b'eggs')
+    assert bytes(remaining) == b's'
+    assert bytes(buffer.pop(buffer.capacity)) == b'spamegg'
+
+
+def test_invalid():
+    with pytest.raises(ValueError):
+        RingBuffer(format='B', capacity=0)
+
+    buffer = RingBuffer(format='B', capacity=10)
+
+    # Empty data is okay
+    buffer.push(b'')
+
+    buffer.push(b'hello')
+
+    # Can't pop negative or zero
+    for i in (-1, 0):
+        with pytest.raises(ValueError):
+            buffer.pop(i)
+
+    # Types must match
+    with pytest.raises(TypeError):
+        buffer.push(np.array('f', [1.0]))
+
+
+def test_callback_void_ptr():
+    _test_callback_void_ptr()

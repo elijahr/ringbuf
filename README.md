@@ -1,9 +1,16 @@
 # ringbuf
-A fast, lock-free, single-producer, single-consumer, ring buffer for Python.
+
+A lock-free, single-producer, single-consumer, ring buffer for Python and Cython.
 
 ![build_status](https://travis-ci.org/elijahr/ringbuf.svg?branch=master)
 
 ## Installation
+
+OS X: `brew install boost`
+
+Ubuntu: `apt-get install libboost-all-dev`
+
+Then:
 
 ```shell
 pip install ringbuf
@@ -13,62 +20,82 @@ pip install ringbuf
 
 When working with realtime DSP in Python, we might be wrapping some external C/C++ library (for instance, PortAudio) which runs some user-provided callback function in realtime. The callback function shouldn't allocate/deallocate memory, shouldn't contain any critical sections (mutexes), and so forth, to prevent priority inversion. If the callback were to contain Python objects, we'd likely be allocating and deallocating, and at the very least, acquiring and releasing the GIL. So, the callback cannot interact with Python objects if we expect realtime performance. As such, there's a need for buffering data in a non-locking way between a C/C++ callback and Python.
 
-Enter ringbuf, Cython wrappers for Terry Louwers' [ContiguousRingbuffer](https://github.com/tlouwers/embedded/blob/master/ContiguousBuffer/ContiguousRingbuffer.hpp), a variant of the [BipBuffer](https://www.codeproject.com/Articles/3479/The-Bip-Buffer-The-Circular-Buffer-with-a-Twist). Our Python code can read from and write to a `ringbuf.RingBuffer` object, and our C/C++ code can read from and write to that buffer's underlying `ContiguousRingbuffer`, no GIL required.
+Enter ringbuf, Cython wrappers for [`boost::lockfree::spsc_queue`](https://www.boost.org/doc/libs/1_72_0/doc/html/boost/lockfree/spsc_queue.html). Our Python code can read from and write to a `ringbuf.RingBuffer` object, and our C++ code can read from and write to that buffer's underlying `spsc_queue`, no GIL required.
 
 ## Usage
 
-### Simple, 1-dimensional array
+### bytes
+
+```python
+from ringbuf import RingBuffer
+
+buffer = RingBuffer('B', 11)
+
+buffer.push(b'hello world')
+
+popped = buffer.pop(11)
+
+assert bytes(popped) == b'hello world'
+```
+
+### NumPy
 
 ```python
 import numpy as np
 from ringbuf import RingBuffer
 
-# Create a buffer to hold 100 floats
 buffer = RingBuffer('f', 100)
 
-# Create some data to place in the buffer
-data = np.linspace(-1, 1, num=100)
+data = np.linspace(-1, 1, num=100, dtype='f')
 
-# Fill buffer
-with buffer.poke(100) as chunk:
-    # chunk is a Cython array, which is similar to a numpy array and supports Python's buffer protocol.
-    # We assign data to the chunk using slice syntax.
-    chunk[:] = data
+buffer.push(data)
 
-# Peek at the buffer
-assert np.array_equal(np.array(buffer.peek(100)), data)
+popped = buffer.pop(100)
 
-# Empty the buffer
-assert np.array_equal(buffer.read(100), data)
+assert np.array_equal(data, popped)
 ```
 
-### Multi-dimensional data
+### Interfacing with C/C++
 
-```python
-import numpy as np
-from ringbuf import RingBuffer
+mymodule.pxd:
 
-# Create a buffer to hold 100 floats
-buffer = RingBuffer('f', 100)
+```cython
+# distutils: language = c++
 
-# Create some interleaved stereo audio data
-data = np.linspace(-1, 1, num=100).reshape((50, 2))
+from .boost cimport spsc_queue
+from .boost cimport void_ptr_to_spsc_queue_char_ptr
 
-# Fill buffer
-with buffer.poke((50, 2)) as chunk:
-    # chunk is a Cython array, which is similar to a numpy array and supports Python's buffer protocol.
-    # We assign data to the chunk using slice syntax.
-    chunk[:] = data
-
-# Peek at the buffer
-assert np.array_equal(np.array(buffer.peek((25, 2))), data[:25])
-assert np.array_equal(np.array(buffer.peek((50, 2))[25:]), data[25:])
-
-# Empty the buffer
-assert np.array_equal(np.array(buffer.read((50, 2))), data)
+cdef void callback(void* q)
 ```
 
-See the [tests](https://github.com/elijahr/ringbuf/blob/master/test.py).
+mymodule.pyx:
+
+```cython
+# distutils: language = c++
+from array import array
+from some_c_library cimport some_c_function
+
+cdef void callback(void* q):
+    cdef:
+        # Cast the void* back to an spsc_queue.
+        # The underlying queue always holds chars.
+        spsc_queue[char] *queue = void_ptr_to_spsc_queue_char_ptr(q)
+        double[5] indata = [1.0, 2.0, 3.0, 4.0, 5.0]
+
+    # Since the queue holds chars, you'll have to cast and adjust size accordingly.
+    queue.push(<char*>indata, sizeof(double) * 5)
+
+
+def do_stuff():
+    buffer = RingBuffer('d', capacity=100)
+    # Pass our callback and a void* to the buffer's queue to some third party library.
+    # Presumably, the C library schedules the callback and passes it the queue's void pointer.
+    some_c_function(callback, buffer.queue_void_ptr())
+    sleep(1)
+    assert array.array('d', buffer.pop(5)) == array.array('d', range(1, 6))
+```
+
+For additional usage see the [tests](https://github.com/elijahr/ringbuf/blob/master/test.py).
 
 ## Supported platforms
 
@@ -76,7 +103,7 @@ Travis CI tests with the following configurations:
 * Ubuntu 18.04 Bionic Beaver + [CPython3.6, CPython3.7, CPython3.8, PyPy7.3.0 (3.6.9)]
 * OS X + [CPython3.6, CPython3.7, CPython3.8, PyPy7.3.0 (3.6.9)]
 
-Any platforms with a C++11 compiler will probably work.
+Any platform with a C++11 compiler will probably work.
 
 ## Contributing
 

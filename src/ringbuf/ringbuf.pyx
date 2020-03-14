@@ -5,172 +5,137 @@ from operator import mul
 from typing import Union, Tuple, Any
 
 from libc.string cimport memcpy
+from cpython.buffer cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_ANY_CONTIGUOUS, PyBUF_SIMPLE
 from cython.view cimport array as _Array, memoryview as _MemoryView
 
-from .exceptions import Overflow, Underflow
 
-__all__ = ['RingBuffer', 'Array', 'MemoryView']
+__all__ = ['RingBuffer', 'Array', 'MemoryView', 'Underflow']
 
 
+Array = _Array
 MemoryView = _MemoryView
-MemoryViewSlice = None
 
 
-class Array(_Array):
-
-    def __setitem__(self, item, value: Any):
-        cdef object view = memoryview(value)
-        try:
-            if view.format != self._format:
-                raise TypeError('Mismatched format (got %r, expected %r)' % (view.format, self._format))
-            self.memview[item] = value
-        finally:
-            del view
-
-    @property
-    def _format(self):
-        return (<_Array>self).format.decode('ascii')
+class Underflow(BufferError):
+    ...
 
 
 cdef class RingBuffer:
     def __cinit__(self, format: str, capacity: int):
+        if capacity <= 0:
+            raise ValueError('capacity must be > 0')
         self.format = format
+        self.capacity = capacity
         self.itemsize = struct.calcsize(format)
-        self.buf = new ContiguousRingbuffer[char]()
-        self.resize(capacity)
+        self.queue = new spsc_queue[char](capacity * self.itemsize)
 
     def __init__(self, format: str, capacity: int):
         ...
 
     def __dealloc__(self):
-        del self.buf
+        del self.queue
 
-    cpdef void resize(RingBuffer self, const size_t size):
+    def pop(self, count: int) -> MemoryView:
+        """
+        Pops a maximum of count objects from the RingBuffer.
+        """
         cdef:
-            bint resized
-            # Allocate twice the expected maximum size, to prevent underflow when wrapping
-            size_t sz = size * self.itemsize * 2
-        with nogil:
-            resized = self.buf.resize(sz)
-        if not resized:
-            raise Overflow
+            size_t popped
+            ssize_t size = count * self.itemsize
+            _Array arr
 
-    @contextmanager
-    def poke(RingBuffer self, shape: Union[int, Tuple[int, ...]]) -> Array:
-        cdef:
-            long bytesize
-            size_t bs
-            bint poked
-            char* data = NULL
-            object arr
-
-        if not isinstance(shape, tuple):
-            shape = (shape, )
-
-        bytesize = reduce(mul, shape, self.itemsize)
-
-        if bytesize <= 0:
-            raise ValueError('Invalid shape %s' % repr(shape))
-
-        if (bytesize / self.itemsize) > self.available:
-            raise Overflow
-
-        bs = <size_t>bytesize
-
-        with nogil:
-            poked = self.buf.poke(data, bs)
-
-        if not poked:
-            raise Overflow
-
-        arr = Array(
+        arr = _Array(
             format=self.format,
-            shape=shape,
-            mode='c',
-            itemsize=self.itemsize,
-            allocate_buffer=False)
-        (<_Array>arr).data = data
-
-        try:
-            yield arr
-            self.buf.write(bytesize)
-        finally:
-            del arr
-
-    def peek(RingBuffer self, shape: Union[int, Tuple[int, ...]]) -> Array:
-        return self.read(shape, peek=True)
-
-    def read(RingBuffer self, shape: Union[int, Tuple[int, ...]], peek: bool = False) -> Array:
-        cdef:
-            long bytesize
-            size_t bs
-            bint peeked_all
-            char* data = NULL
-            object arr
-            bint read
-
-        if not isinstance(shape, tuple):
-            shape = (shape, )
-
-        bytesize = reduce(mul, shape, self.itemsize)
-
-        if bytesize <= 0:
-            raise ValueError('Invalid shape %s' % repr(shape))
-
-        bs = <size_t>bytesize
-
-        with nogil:
-            peeked = self.buf.peek(data, bs)
-
-        if not peeked:
-            raise Underflow
-
-        arr = Array(
-            format=self.format,
-            shape=shape,
+            shape=(count, ),
             mode='c',
             itemsize=self.itemsize,
             allocate_buffer=True)
 
         with nogil:
-            memcpy((<_Array>arr).data, data, bytesize)
+            popped = self.queue.pop(arr.data, size)
 
-        if not peek:
-            with nogil:
-                read = self.buf.read(bytesize)
-            if not read:
-                raise Underflow
+        if popped <= 0:
+            raise Underflow
 
-        return arr
+        return arr[:int(popped / self.itemsize)]
 
-    cpdef void clear(RingBuffer self):
-        with nogil:
-            self.buf.clear()
+    def push(self, data: Any) -> Any:
+        """
+        Pushes as many objects from data as possible, returns any remaining data.
 
-    @property
-    def size(RingBuffer self) -> int:
+        :param data: any object which implements the Python buffer protocol.
+            This includes, but is not limited to array.array, numpy.ndarray, bytes, bytearray, memoryview,
+            cython arrays, and cython typed memoryviews.
+        :return: either a slice of the original data for any remaining data which was not pushed to the buffer,
+                 or None if all data was pushed.
+        """
         cdef:
-            size_t size
-        with nogil:
-            size = self.buf.size()
-        return int(size / self.itemsize)
+            Py_buffer py_buffer
+            size_t pushed
+            object memview = memoryview(data)
+
+        try:
+            if memview.ndim != 1:
+                raise ValueError('Only 1-dimensional data can be pushed to a RingBuffer')
+
+            elif memview.format != self.format:
+                raise TypeError('Mismatched format in input (got %r, expected %r)' % (
+                    memview.format, self.format))
+
+            PyObject_GetBuffer(memview, &py_buffer, PyBUF_SIMPLE | PyBUF_ANY_CONTIGUOUS)
+            try:
+                with nogil:
+                    pushed = self.queue.push(<char*>py_buffer.buf, py_buffer.len)
+                if pushed != py_buffer.len:
+                    return data[pushed / py_buffer.itemsize:]
+            finally:
+                PyBuffer_Release(&py_buffer)
+        finally:
+            memview.release()
+
 
     @property
-    def capacity(RingBuffer self) -> int:
-        cdef:
-            size_t capacity
-        with nogil:
-            capacity = self.buf.capacity()
-        return int((capacity / self.itemsize) / 2)
+    def read_available(self) -> int:
+        """
+        Get number of elements that are available for read
+        """
+        return int(self.queue.read_available() / self.itemsize)
 
     @property
-    def available(RingBuffer self) -> int:
-        return self.capacity - self.size
+    def write_available(self) -> int:
+        """
+        Get the space available for writing.
+        """
+        return int(self.queue.write_available() / self.itemsize)
 
     @property
-    def is_lock_free(RingBuffer self) -> bool:
-        cdef:
-            bint is_lock_free
-        with nogil:
-            is_lock_free = self.buf.is_lock_free()
-        return is_lock_free
+    def is_lock_free(self) -> bool:
+        return self.queue.is_lock_free()
+
+    cdef void* queue_void_ptr(self):
+        return spsc_queue_char_ptr_to_void_ptr(self.queue)
+
+
+cdef void _test_callback_call(_test_callback_t* callback, void* queue_):
+    callback(queue_)
+
+
+cdef void _test_callback_push(void* queue_):
+    cdef:
+        # The underlying queue always holds chars
+        spsc_queue[char] *queue = void_ptr_to_spsc_queue_char_ptr(queue_)
+        double[5] indata = [1.0, 2.0, 3.0, 4.0, 5.0]
+
+    # Cast to char* and multiply # elements with size of double
+    queue.push(<char*>indata, sizeof(double) * 5)
+
+
+def _test_callback_void_ptr():
+    """
+    Test for casting spsc_queue from / to void pointer.
+    """
+    import array
+
+    buffer = RingBuffer('d', capacity=100)
+    _test_callback_call(_test_callback_push, buffer.queue_void_ptr())
+    assert bytes(buffer.pop(5)) == bytes(array.array('d', [1.0, 2.0, 3.0, 4.0, 5.0]))
