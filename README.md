@@ -24,19 +24,7 @@ Enter ringbuf, Cython wrappers for [`boost::lockfree::spsc_queue`](https://www.b
 
 ## Usage
 
-### bytes
-
-```python
-from ringbuf import RingBuffer
-
-buffer = RingBuffer('B', 11)
-
-buffer.push(b'hello world')
-
-popped = buffer.pop(11)
-
-assert bytes(popped) == b'hello world'
-```
+Any Python object which supports the [buffer protocol](https://docs.python.org/3/c-api/buffer.html) can be stored in `ringbuf.RingBuffer`. This includes, but is not limited to: `bytes`, `bytearray`, `array.array`, and `numpy.ndarray`.
 
 ### NumPy
 
@@ -44,7 +32,7 @@ assert bytes(popped) == b'hello world'
 import numpy as np
 from ringbuf import RingBuffer
 
-buffer = RingBuffer('f', 100)
+buffer = RingBuffer(format='f', capacity=100)
 
 data = np.linspace(-1, 1, num=100, dtype='f')
 
@@ -55,6 +43,20 @@ popped = buffer.pop(100)
 assert np.array_equal(data, popped)
 ```
 
+### bytes
+
+```python
+from ringbuf import RingBuffer
+
+buffer = RingBuffer(format='B', capacity=11)
+
+buffer.push(b'hello world')
+
+popped = buffer.pop(11)
+
+assert bytes(popped) == b'hello world'
+```
+
 ### Interfacing with C/C++
 
 mymodule.pxd:
@@ -62,8 +64,7 @@ mymodule.pxd:
 ```cython
 # distutils: language = c++
 
-from .boost cimport spsc_queue
-from .boost cimport void_ptr_to_spsc_queue_char_ptr
+from ringbuf.boost cimport spsc_queue, void_ptr_to_spsc_queue_char_ptr
 
 cdef void callback(void* q)
 ```
@@ -72,6 +73,7 @@ mymodule.pyx:
 
 ```cython
 # distutils: language = c++
+
 from array import array
 from some_c_library cimport some_c_function
 
@@ -80,19 +82,36 @@ cdef void callback(void* q):
         # Cast the void* back to an spsc_queue.
         # The underlying queue always holds chars.
         spsc_queue[char] *queue = void_ptr_to_spsc_queue_char_ptr(q)
-        double[5] indata = [1.0, 2.0, 3.0, 4.0, 5.0]
+        double[5] to_push = [1.0, 2.0, 3.0, 4.0, 5.0]
 
     # Since the queue holds chars, you'll have to cast and adjust size accordingly.
-    queue.push(<char*>indata, sizeof(double) * 5)
+    queue.push(<char*>to_push, sizeof(double) * 5)
 
 
 def do_stuff():
-    buffer = RingBuffer('d', capacity=100)
+    cdef:
+        RingBuffer buffer = RingBuffer(format='d', capacity=100)
+        void* queue = buffer.queue_void_ptr()
+
     # Pass our callback and a void* to the buffer's queue to some third party library.
     # Presumably, the C library schedules the callback and passes it the queue's void pointer.
-    some_c_function(callback, buffer.queue_void_ptr())
+    some_c_function(callback, queue)
+
     sleep(1)
+
     assert array.array('d', buffer.pop(5)) == array.array('d', range(1, 6))
+```
+
+### Handling overflow
+
+When `RingBuffer.push()` overflows, it simply returns the data that couldn't be pushed:
+
+```python
+from ringbuf import RingBuffer
+
+buffer = RingBuffer(format='B', capacity=10)
+overflowed = buffer.push(b'spam eggs ham')
+assert overflowed == b'ham'
 ```
 
 For additional usage see the [tests](https://github.com/elijahr/ringbuf/blob/master/test.py).

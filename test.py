@@ -53,7 +53,7 @@ def test_push_pop(expected):
 
     # test full read
     assert np.array_equal(
-        np.array(buffer.pop(capacity)),
+        buffer.pop(capacity),
         expected)
     assert buffer.read_available == 0
     assert buffer.write_available == capacity
@@ -73,7 +73,7 @@ def test_push_pop(expected):
     prev_write_available = 0
     for chunk in np.array_split(expected, 6):
         assert np.array_equal(
-            np.array(buffer.pop(len(chunk))),
+            buffer.pop(len(chunk)),
             chunk)
         assert buffer.write_available == prev_write_available + len(chunk)
         prev_write_available += len(chunk)
@@ -81,13 +81,13 @@ def test_push_pop(expected):
     # test reading more than available
     buffer.push(expected[:10])
     assert np.array_equal(
-        np.array(buffer.pop(capacity)),
+        buffer.pop(capacity),
         expected[:10])
 
     # teest reading more than capacity
     buffer.push(expected)
     assert np.array_equal(
-        np.array(buffer.pop(capacity + 123)),
+        buffer.pop(capacity + 123),
         expected)
 
 
