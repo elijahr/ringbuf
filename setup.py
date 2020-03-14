@@ -145,7 +145,7 @@ def get_ext_modules():
 setup(
     name='ringbuf',
     version='1.0.3',
-    description='A lock-free ring buffer for Python.',
+    description='A lock-free ring buffer for Python and Cython.',
     long_description=get_readme(),
     long_description_content_type="text/markdown",
     url='https://github.com/elijahr/ringbuf',
