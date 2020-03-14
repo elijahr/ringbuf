@@ -21,7 +21,7 @@ class Underflow(BufferError):
 
 
 cdef class RingBuffer:
-    def __cinit__(self, format: str, capacity: int):
+    def __cinit__(self, format: str, capacity: int, *args, **kwargs):
         if capacity <= 0:
             raise ValueError('capacity must be > 0')
         self.format = format
@@ -29,7 +29,7 @@ cdef class RingBuffer:
         self.itemsize = struct.calcsize(format)
         self.queue = new spsc_queue[char](capacity * self.itemsize)
 
-    def __init__(self, format: str, capacity: int):
+    def __init__(self, format: str, capacity: int, *args, **kwargs):
         ...
 
     def __dealloc__(self):
