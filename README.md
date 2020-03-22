@@ -102,9 +102,9 @@ def do_stuff():
     assert array.array('d', buffer.pop(5)) == array.array('d', range(1, 6))
 ```
 
-### Handling overflow
+### Handling overflow & underflow
 
-When `RingBuffer.push()` overflows, it simply returns the data that couldn't be pushed:
+When `RingBuffer.push()` overflows, it returns the data that couldn't be pushed (or None, if all was pushed):
 
 ```python
 from ringbuf import RingBuffer
@@ -113,6 +113,18 @@ buffer = RingBuffer(format='B', capacity=10)
 overflowed = buffer.push(b'spam eggs ham')
 assert overflowed == b'ham'
 ```
+
+When `RingBuffer.pop()` underflows, it returns whatever data could be popped:
+
+```python
+from ringbuf import RingBuffer
+
+buffer = RingBuffer(format='B', capacity=10)
+overflowed = buffer.push(b'spam eggs ham')
+assert overflowed == b'ham'
+```
+
+
 
 For additional usage see the [tests](https://github.com/elijahr/ringbuf/blob/master/test.py).
 
@@ -127,3 +139,8 @@ Any platform with a C++11 compiler will probably work.
 ## Contributing
 
 Pull requests are welcome, please file any issues you encounter.
+
+## Changelog
+
+### v2.1.0 2020-03-22
+* Added `concatenate` function for joining multiple Cython arrays.

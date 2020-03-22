@@ -9,15 +9,11 @@ from cpython.buffer cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_ANY_CONT
 from cython.view cimport array as _Array, memoryview as _MemoryView
 
 
-__all__ = ['RingBuffer', 'Array', 'MemoryView', 'Underflow']
+__all__ = ['RingBuffer', 'Array', 'MemoryView', 'concatenate']
 
 
 Array = _Array
 MemoryView = _MemoryView
-
-
-class Underflow(BufferError):
-    ...
 
 
 cdef class RingBuffer:
@@ -35,12 +31,15 @@ cdef class RingBuffer:
     def __dealloc__(self):
         del self.queue
 
-    def pop(self, count: int) -> MemoryView:
+    def pop(self, count: int) -> Union[None, MemoryView]:
         """
-        Pops a maximum of count objects from the RingBuffer.
+        Pops a maximum of count element from the RingBuffer.
+
+        Returns either whatever data, up to count elements, could be popped, or None.
         """
         cdef:
-            size_t popped
+            size_t popped_bytes
+            size_t popped_count
             ssize_t size = count * self.itemsize
             _Array arr
 
@@ -52,12 +51,13 @@ cdef class RingBuffer:
             allocate_buffer=True)
 
         with nogil:
-            popped = self.queue.pop(arr.data, size)
+            popped_bytes = self.queue.pop(arr.data, size)
 
-        if popped <= 0:
-            raise Underflow
-
-        return arr[:int(popped / self.itemsize)]
+        if popped_bytes > 0:
+            return arr[:int(popped_bytes / self.itemsize)]
+        else:
+            del arr
+            return None
 
     def push(self, data: Any) -> Any:
         """
@@ -139,3 +139,33 @@ def _test_callback_void_ptr():
     buffer = RingBuffer('d', capacity=100)
     _test_callback_call(_test_callback_push, buffer.queue_void_ptr())
     assert bytes(buffer.pop(5)) == bytes(array.array('d', [1.0, 2.0, 3.0, 4.0, 5.0]))
+
+
+def concatenate(*arrays: Array) -> Array:
+    cdef:
+        _Array cat
+        _Array arr
+        size_t total
+        size_t offset = 0
+        size_t to_copy = 0
+    if not arrays:
+        raise ValueError('concatenate requires at least one positional argument')
+    total = sum(len(a) for a in arrays)
+    cat = _Array(
+        format=(<_Array>arrays[0]).format,
+        shape=(total, ),
+        mode='c',
+        itemsize=arrays[0].itemsize,
+        allocate_buffer=True)
+    for a in arrays:
+        if not isinstance(a, Array):
+            raise TypeError('%r is not a ringbuf.Array' % a)
+        elif <bytes>(<_Array>a).format != <bytes> cat.format:
+            raise TypeError('Cannot concatenate arrays of different formats %r %r' % ((<_Array>a).format, cat.format))
+        arr = <_Array>a
+        to_copy = (<_MemoryView>arr.memview).nbytes
+        with nogil:
+            memcpy(&cat.data[offset], arr.data, to_copy)
+        offset += arr.memview.nbytes
+    return cat
+

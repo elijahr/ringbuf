@@ -1,8 +1,10 @@
 
+import struct
+
 import numpy as np
 import pytest
 
-from ringbuf import RingBuffer, Underflow
+from ringbuf import Array, RingBuffer, concatenate
 from ringbuf.ringbuf import _test_callback_void_ptr
 from ringbuf.libc_constants import SCHAR_MIN, SCHAR_MAX, UCHAR_MAX, SHRT_MIN, SHRT_MAX, USHRT_MAX, INT_MIN, \
     INT_MAX, UINT_MAX, LONG_MIN, LONG_MAX, ULONG_MAX, LLONG_MIN, LLONG_MAX, ULLONG_MAX, FLT_MIN, FLT_MAX, DBL_MIN, \
@@ -93,8 +95,7 @@ def test_push_pop(expected):
 
 def test_underflow():
     buffer = RingBuffer(format='b', capacity=1)
-    with pytest.raises(Underflow):
-        buffer.pop(1)
+    assert buffer.pop(1) is None
 
 
 def test_overflow():
@@ -127,5 +128,27 @@ def test_invalid():
         buffer.push(np.array('f', [1.0]))
 
 
+def test_concatenate():
+    arrays = [
+        Array(format='i', shape=(100,), itemsize=struct.calcsize('i'))
+        for i in range(4)
+    ]
+    expected = np.concatenate([
+        np.linspace(i, i+100, num=100, dtype='i')
+        for i in range(0, 800, 200)
+    ])
+    for i, arr in enumerate(arrays):
+        arr[:] = expected[i*100:i*100+100]
+    concatenated = concatenate(*arrays)
+    assert np.array_equal(
+        np.array(concatenated, dtype='i'),
+        expected,
+    )
+
+
+
+
+
 def test_callback_void_ptr():
     _test_callback_void_ptr()
+

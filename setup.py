@@ -50,16 +50,9 @@ class BuildExt(build_ext):
     user_options = build_ext.user_options + []
 
     def initialize_options(self):
-        self.single_version_externally_managed = False
         build_ext.initialize_options(self)
         args = get_args()
         self.debug = args.debug
-        self.single_version_externally_managed = False
-
-    def finalize_options(self):
-        self.single_version_externally_managed = False
-        build_ext.finalize_options(self)
-        self.single_version_externally_managed = False
 
 
 class Install(install):
@@ -68,16 +61,9 @@ class Install(install):
     ]
 
     def initialize_options(self):
-        self.single_version_externally_managed = False
         install.initialize_options(self)
         args = get_args()
         self.debug = args.debug
-        self.single_version_externally_managed = False
-
-    def finalize_options(self):
-        self.single_version_externally_managed = False
-        install.finalize_options(self)
-        self.single_version_externally_managed = False
 
 
 def get_readme():
@@ -86,13 +72,11 @@ def get_readme():
 
 
 def get_packages():
-    args = get_args()
     packages = ['ringbuf']
     return packages
 
 
 def get_package_dir():
-    args = get_args()
     package_dir = {'ringbuf': MODULE_PATH}
     return package_dir
 
@@ -144,13 +128,14 @@ def get_ext_modules():
 
 setup(
     name='ringbuf',
-    version='2.0.0',
+    version='2.1.0',
     description='A lock-free ring buffer for Python and Cython.',
     long_description=get_readme(),
     long_description_content_type="text/markdown",
     url='https://github.com/elijahr/ringbuf',
     author='Elijah Shaw-Rutschman',
     author_email='elijahr@gmail.com',
+    zip_safe=False,
     packages=get_packages(),
     package_dir=get_package_dir(),
     package_data=get_package_data(),
