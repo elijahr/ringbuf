@@ -1,5 +1,8 @@
 # distutils: language = c++
 
+from libcpp.pair cimport pair
+from libcpp.vector cimport vector
+
 from .boost cimport spsc_queue
 from .boost cimport void_ptr_to_spsc_queue_char_ptr, spsc_queue_char_ptr_to_void_ptr
 
@@ -27,3 +30,9 @@ ctypedef void _test_callback_t(void* queue_)
 cdef void _test_callback_call(_test_callback_t* callback, void* queue_)
 
 cdef void _test_callback_push(void* queue_)
+
+ctypedef pair[char*, size_t] addr_and_size_t
+ctypedef pair[addr_and_size_t, addr_and_size_t] copy_instr_t
+
+
+cdef void copy_from_instr(copy_instr_t copy_instr) nogil

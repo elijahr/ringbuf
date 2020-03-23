@@ -142,5 +142,8 @@ Pull requests are welcome, please file any issues you encounter.
 
 ## Changelog
 
+### v2.2.0 2020-03-22
+* Parallelize `concatenate`.
+
 ### v2.1.0 2020-03-22
 * Added `concatenate` function for joining multiple Cython arrays.

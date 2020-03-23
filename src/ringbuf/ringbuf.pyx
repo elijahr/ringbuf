@@ -7,6 +7,7 @@ from typing import Union, Tuple, Any
 from libc.string cimport memcpy
 from cpython.buffer cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_ANY_CONTIGUOUS, PyBUF_SIMPLE
 from cython.view cimport array as _Array, memoryview as _MemoryView
+from cython.parallel cimport prange
 
 
 __all__ = ['RingBuffer', 'Array', 'MemoryView', 'concatenate']
@@ -148,8 +149,12 @@ def concatenate(*arrays: Array) -> Array:
         size_t total
         size_t offset = 0
         size_t to_copy = 0
+        int i
+        vector[copy_instr_t] copy_instrs
+
     if not arrays:
         raise ValueError('concatenate requires at least one positional argument')
+
     total = sum(len(a) for a in arrays)
     cat = _Array(
         format=(<_Array>arrays[0]).format,
@@ -157,6 +162,7 @@ def concatenate(*arrays: Array) -> Array:
         mode='c',
         itemsize=arrays[0].itemsize,
         allocate_buffer=True)
+
     for a in arrays:
         if not isinstance(a, Array):
             raise TypeError('%r is not a ringbuf.Array' % a)
@@ -164,8 +170,22 @@ def concatenate(*arrays: Array) -> Array:
             raise TypeError('Cannot concatenate arrays of different formats %r %r' % ((<_Array>a).format, cat.format))
         arr = <_Array>a
         to_copy = (<_MemoryView>arr.memview).nbytes
-        with nogil:
-            memcpy(&cat.data[offset], arr.data, to_copy)
-        offset += arr.memview.nbytes
+        copy_instrs.push_back(
+            copy_instr_t(addr_and_size_t(cat.data, offset),
+                         addr_and_size_t(arr.data, to_copy)))
+        offset += to_copy
+
+    # copy in parallel
+    for i in prange(copy_instrs.size(), nogil=True):
+        copy_from_instr(copy_instrs[i])
+
     return cat
 
+
+cdef void copy_from_instr(copy_instr_t copy_instr) nogil:
+    cdef:
+        char* dest = copy_instr.first.first
+        size_t offset = copy_instr.first.second
+        char* source = copy_instr.second.first
+        size_t nbytes = copy_instr.second.second
+    memcpy(&dest[offset], source, nbytes)
