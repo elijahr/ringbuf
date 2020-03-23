@@ -5,6 +5,7 @@ from operator import mul
 from typing import Union, Tuple, Any
 
 from libc.string cimport memcpy
+from libc.stdlib cimport malloc, free
 from cpython.buffer cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_ANY_CONTIGUOUS, PyBUF_SIMPLE
 from cython.view cimport array as _Array, memoryview as _MemoryView
 from cython.parallel cimport prange
@@ -142,44 +143,63 @@ def _test_callback_void_ptr():
     assert bytes(buffer.pop(5)) == bytes(array.array('d', [1.0, 2.0, 3.0, 4.0, 5.0]))
 
 
-def concatenate(*arrays: Array) -> Array:
+def concatenate(*items: Any) -> Array:
     cdef:
-        _Array cat
-        _Array arr
+        Py_buffer* py_buffers
         size_t total
+        _Array arr
+        object item
+        object memview
+        list memviews = []
         size_t offset = 0
-        size_t to_copy = 0
         int i
         vector[copy_instr_t] copy_instrs
 
-    if not arrays:
+    if not items:
         raise ValueError('concatenate requires at least one positional argument')
 
-    total = sum(len(a) for a in arrays)
-    cat = _Array(
-        format=(<_Array>arrays[0]).format,
-        shape=(total, ),
-        mode='c',
-        itemsize=arrays[0].itemsize,
-        allocate_buffer=True)
+    py_buffers = <Py_buffer*>malloc(sizeof(Py_buffer) * len(items))
 
-    for a in arrays:
-        if not isinstance(a, Array):
-            raise TypeError('%r is not a ringbuf.Array' % a)
-        elif <bytes>(<_Array>a).format != <bytes> cat.format:
-            raise TypeError('Cannot concatenate arrays of different formats %r %r' % ((<_Array>a).format, cat.format))
-        arr = <_Array>a
-        to_copy = (<_MemoryView>arr.memview).nbytes
-        copy_instrs.push_back(
-            copy_instr_t(addr_and_size_t(cat.data, offset),
-                         addr_and_size_t(arr.data, to_copy)))
-        offset += to_copy
+    total = sum(len(a) for a in items)
 
-    # copy in parallel
-    for i in prange(copy_instrs.size(), nogil=True):
-        copy_from_instr(copy_instrs[i])
+    try:
+        for i, item in enumerate(items):
+            memview = memoryview(item)
+            PyObject_GetBuffer(memview, &py_buffers[i], PyBUF_SIMPLE | PyBUF_ANY_CONTIGUOUS)
+            memviews.append(memview)
 
-    return cat
+            if memview.ndim != 1:
+                raise ValueError('Only 1-dimensional data can be joined with concatenate')
+
+            elif i == 0:
+                arr = _Array(
+                    format=memview.format,
+                    shape=(total, ),
+                    mode='c',
+                    itemsize=memview.itemsize,
+                    allocate_buffer=True)
+
+            elif memview.format != arr.format.decode('ascii'):
+                raise TypeError('Mismatched format in input (got %r, expected %r)' % (
+                    memview.format, arr.format.decode('ascii')))
+
+            copy_instrs.push_back(
+                copy_instr_t(
+                    addr_and_size_t(arr.data, offset),
+                    addr_and_size_t(<char*>py_buffers[i].buf, py_buffers[i].len)))
+            offset += py_buffers[i].len
+
+        # copy in parallel
+        for i in prange(copy_instrs.size(), nogil=True):
+            copy_from_instr(copy_instrs[i])
+
+    finally:
+        for i, memview in enumerate(memviews):
+            PyBuffer_Release(&py_buffers[i])
+            memview.release()
+        free(py_buffers)
+
+    return arr
 
 
 cdef void copy_from_instr(copy_instr_t copy_instr) nogil:

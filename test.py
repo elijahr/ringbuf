@@ -129,24 +129,52 @@ def test_invalid():
 
 
 def test_concatenate():
+    array_size = 10000
+    num_arrays = 1000
     arrays = [
-        Array(format='i', shape=(100,), itemsize=struct.calcsize('i'))
-        for i in range(4)
+        Array(format='i', shape=(array_size,), itemsize=struct.calcsize('i'))
+        for i in range(num_arrays)
     ]
-    expected = np.concatenate([
-        np.linspace(i, i+100, num=100, dtype='i')
-        for i in range(0, 800, 200)
-    ])
+    expected = [
+        np.linspace(i, i+array_size, num=array_size, dtype='i')
+        for i in range(0, array_size*num_arrays, array_size)
+    ]
     for i, arr in enumerate(arrays):
-        arr[:] = expected[i*100:i*100+100]
+        arr[:] = expected[i]
+
     concatenated = concatenate(*arrays)
     assert np.array_equal(
         np.array(concatenated, dtype='i'),
-        expected,
+        np.concatenate(expected),
     )
 
 
+def test_concatenate_valueerror_ndims():
+    with pytest.raises(ValueError):
+        concatenate(
+            np.array([[1, 2], [3, 4]]),
+            np.array([[1, 2], [3, 4]]))
 
+
+def test_concatenate_valueerror_no_args():
+    with pytest.raises(ValueError):
+        concatenate()
+
+
+@pytest.mark.parametrize('invalid', (
+    np.array([1.1, 2.2], dtype='f'),
+    b'hello',
+))
+def test_concatenate_typeerror(invalid):
+    with pytest.raises(TypeError):
+        concatenate(
+            invalid,
+            np.array([1, 2], dtype='i'))
+
+
+def test_concatenate_valueerror_empty():
+    with pytest.raises(ValueError):
+        concatenate(b'')
 
 
 def test_callback_void_ptr():
