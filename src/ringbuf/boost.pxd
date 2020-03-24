@@ -28,7 +28,11 @@ cdef extern from '<boost/lockfree/spsc_queue.hpp>' namespace 'boost::lockfree' n
         # get write space to write elements
         size_t write_available() const
 
+        # return true, if implementation is lock-free
         libcpp.bool is_lock_free()
+
+        # reset the ringbuffer
+        void reset()
 
 
 cdef extern from *:

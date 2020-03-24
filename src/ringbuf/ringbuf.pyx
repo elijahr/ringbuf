@@ -114,6 +114,9 @@ cdef class RingBuffer:
     def is_lock_free(self) -> bool:
         return self.queue.is_lock_free()
 
+    def reset(self) -> None:
+        self.queue.reset()
+
     cdef void* queue_void_ptr(self):
         return spsc_queue_char_ptr_to_void_ptr(self.queue)
 

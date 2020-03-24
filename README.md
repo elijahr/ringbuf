@@ -142,5 +142,8 @@ Pull requests are welcome, please file any issues you encounter.
 
 ## Changelog
 
+### v2.4.0 2020-03-23
+* Added `RingBuffer.reset()` method for .
+
 ### v2.3.0 2020-03-22
-* Added `concatenate` function for joining multiple Cython arrays.
+* Added `concatenate` function for joining multiple arbitrary Python objects that support the buffer protocol.

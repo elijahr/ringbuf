@@ -38,10 +38,11 @@ def expected(request):
     return request.param
 
 
-def test_push_pop(expected):
+def test_ringbuffer_push_pop(expected):
     capacity = expected.size
 
     buffer = RingBuffer(format=expected.dtype.char, capacity=capacity)
+    assert buffer.capacity == capacity
     assert buffer.is_lock_free
 
     assert buffer.read_available == 0
@@ -93,21 +94,28 @@ def test_push_pop(expected):
         expected)
 
 
-def test_underflow():
+def test_ringbuffer_underflow():
     buffer = RingBuffer(format='b', capacity=1)
     assert buffer.pop(1) is None
 
 
-def test_overflow():
+def test_ringbuffer_overflow():
     buffer = RingBuffer(format='B', capacity=7)
     remaining = buffer.push(b'spam')
     assert remaining is None
     remaining = buffer.push(b'eggs')
     assert bytes(remaining) == b's'
-    assert bytes(buffer.pop(buffer.capacity)) == b'spamegg'
+    assert bytes(buffer.pop(7)) == b'spamegg'
 
 
-def test_invalid():
+def test_ringbuffer_reset():
+    buffer = RingBuffer(format='B', capacity=5)
+    buffer.push(b'hello')
+    buffer.reset()
+    assert buffer.pop(5) is None
+
+
+def test_ringbuffer_invalid():
     with pytest.raises(ValueError):
         RingBuffer(format='B', capacity=0)
 
