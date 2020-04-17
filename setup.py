@@ -30,6 +30,12 @@ except ImportError:
 
 DIR = os.path.dirname(__file__)
 MODULE_PATH = os.path.join(DIR, 'src', 'ringbuf')
+try:
+    BOOST_PATH = os.environ['BOOST_ROOT']
+except KeyError:
+    BOOST_PATH = ''
+    if 'Windows' in platform.platform():
+        raise KeyError('Please install Boost and specify its location using the "BOOST_ROOT" environmental variable')
 
 
 def get_args():
@@ -89,11 +95,11 @@ def get_package_data():
 def get_ext_modules():
     args = get_args()
     ext_modules = []
-    include_dirs = [os.path.abspath(d) for d in (DIR, MODULE_PATH)]
+    include_dirs = [os.path.abspath(d) for d in (DIR, MODULE_PATH, BOOST_PATH)]
 
     for path in itertools.chain(
             glob.glob(os.path.join(MODULE_PATH, '*.pyx'))):
-        module_name = path.replace(MODULE_PATH, 'ringbuf').replace('/', '.').replace('.pyx', '')
+        module_name = path.replace(MODULE_PATH, 'ringbuf').replace('/', '.').replace('\\', '.').replace('.pyx', '')
         sources = [path]
         extra_compile_args = []
         extra_link_args = []
@@ -128,7 +134,7 @@ def get_ext_modules():
 
 setup(
     name='ringbuf',
-    version='2.4.0',
+    version='2.5.0',
     description='A lock-free ring buffer for Python and Cython.',
     long_description=get_readme(),
     long_description_content_type="text/markdown",
@@ -154,6 +160,7 @@ setup(
     classifiers=[
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: POSIX :: Linux',
+        'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',

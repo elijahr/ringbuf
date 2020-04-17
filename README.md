@@ -10,6 +10,8 @@ OS X: `brew install boost`
 
 Ubuntu: `apt-get install libboost-all-dev`
 
+Windows: Install the latest version of [`Boost`](https://www.boost.org/) then set the `BOOST_ROOT` environment variable to point to its folder.
+
 Then:
 
 ```shell
@@ -142,8 +144,11 @@ Pull requests are welcome, please file any issues you encounter.
 
 ## Changelog
 
+### v2.5.0 2020-04-17
+* Added experimental support for Windows.
+
 ### v2.4.0 2020-03-23
-* Added `RingBuffer.reset()` method for .
+* Added `RingBuffer.reset()` method.
 
 ### v2.3.0 2020-03-22
 * Added `concatenate` function for joining multiple arbitrary Python objects that support the buffer protocol.
