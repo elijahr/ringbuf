@@ -138,7 +138,7 @@ Travis CI tests with the following configurations:
 * Ubuntu 18.04 Bionic Beaver:
    * CPython3.6
    * CPython3.7
-   * CPython3.8*
+   * CPython3.8
    * PyPy7.3.0 (3.6.9)
 * OS X:
     * CPython3.6
