@@ -30,6 +30,14 @@ except ImportError:
 
 DIR = os.path.dirname(__file__)
 MODULE_PATH = os.path.join(DIR, 'src', 'ringbuf')
+INCLUDE_DIRS = [os.path.abspath(d) for d in (DIR, MODULE_PATH)]
+
+try:
+    INCLUDE_DIRS.insert(0, os.environ['BOOST_ROOT'])
+except KeyError:
+    if os.name == 'nt':
+        raise KeyError('Please install Boost and specify its location using the'
+                       '"BOOST_ROOT" environmental variable')
 
 
 def get_args():
@@ -89,11 +97,13 @@ def get_package_data():
 def get_ext_modules():
     args = get_args()
     ext_modules = []
-    include_dirs = [os.path.abspath(d) for d in (DIR, MODULE_PATH)]
 
     for path in itertools.chain(
             glob.glob(os.path.join(MODULE_PATH, '*.pyx'))):
-        module_name = path.replace(MODULE_PATH, 'ringbuf').replace('/', '.').replace('.pyx', '')
+        module_name = path\
+            .replace(MODULE_PATH, 'ringbuf')\
+            .replace(os.path.sep, '.')\
+            .replace('.pyx', '')
         sources = [path]
         extra_compile_args = []
         extra_link_args = []
@@ -107,7 +117,7 @@ def get_ext_modules():
         ext_modules.append(Extension(
             module_name,
             sources=sources,
-            include_dirs=include_dirs,
+            include_dirs=INCLUDE_DIRS,
             extra_compile_args=extra_compile_args,
             extra_link_args=extra_link_args,
             libraries=libraries
@@ -128,7 +138,7 @@ def get_ext_modules():
 
 setup(
     name='ringbuf',
-    version='2.4.0',
+    version='2.5.0',
     description='A lock-free ring buffer for Python and Cython.',
     long_description=get_readme(),
     long_description_content_type="text/markdown",
@@ -154,6 +164,7 @@ setup(
     classifiers=[
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: POSIX :: Linux',
+        'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: Implementation :: CPython',

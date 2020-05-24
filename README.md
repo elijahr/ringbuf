@@ -10,6 +10,8 @@ OS X: `brew install boost`
 
 Ubuntu: `apt-get install libboost-all-dev`
 
+Windows: Install the latest version of [`Boost`](https://www.boost.org/) then set the `BOOST_ROOT` environment variable to point to its folder.
+
 Then:
 
 ```shell
@@ -63,9 +65,6 @@ mymodule.pxd:
 
 ```cython
 # distutils: language = c++
-
-from ringbuf.boost cimport spsc_queue, void_ptr_to_spsc_queue_char_ptr
-
 cdef void callback(void* q)
 ```
 
@@ -73,9 +72,13 @@ mymodule.pyx:
 
 ```cython
 # distutils: language = c++
-
 from array import array
+
+from ringbuf.boost cimport spsc_queue, void_ptr_to_spsc_queue_char_ptr
+from ringbuf.ringbuf cimport RingBuffer
+
 from some_c_library cimport some_c_function
+
 
 cdef void callback(void* q):
     cdef:
@@ -93,7 +96,7 @@ def do_stuff():
         RingBuffer buffer = RingBuffer(format='d', capacity=100)
         void* queue = buffer.queue_void_ptr()
 
-    # Pass our callback and a void* to the buffer's queue to some third party library.
+    # Pass our callback and a void pointer to the buffer's queue to some third party library.
     # Presumably, the C library schedules the callback and passes it the queue's void pointer.
     some_c_function(callback, queue)
 
@@ -131,10 +134,19 @@ For additional usage see the [tests](https://github.com/elijahr/ringbuf/blob/mas
 ## Supported platforms
 
 Travis CI tests with the following configurations:
-* Ubuntu 18.04 Bionic Beaver + [CPython3.6, CPython3.7, CPython3.8, PyPy7.3.0 (3.6.9)]
-* OS X + [CPython3.6, CPython3.7, CPython3.8, PyPy7.3.0 (3.6.9)]
+* Ubuntu 18.04 Bionic Beaver:
+   * CPython3.6
+   * CPython3.7
+   * CPython3.8*
+   * PyPy7.3.0 (3.6.9)
+* OS X:
+    * CPython3.6
+    * CPython3.7
+    * CPython3.8
+    * PyPy7.3.0 (3.6.9)
 
-Any platform with a C++11 compiler will probably work.
+Any platform with a C++11 compiler will probably work. Windows support has been added, but it is considered
+experimental. A pull request to test ringbuf on Windows for Travis CI would be most welcome.
 
 ## Contributing
 
@@ -142,8 +154,11 @@ Pull requests are welcome, please file any issues you encounter.
 
 ## Changelog
 
+### v2.5.0 2020-04-17
+* Added experimental support for Windows.
+
 ### v2.4.0 2020-03-23
-* Added `RingBuffer.reset()` method for .
+* Added `RingBuffer.reset()` method to clear the buffer.
 
 ### v2.3.0 2020-03-22
 * Added `concatenate` function for joining multiple arbitrary Python objects that support the buffer protocol.
