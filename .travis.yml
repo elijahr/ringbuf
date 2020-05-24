@@ -7,6 +7,8 @@ deploy:
   on:
     tags: true
     condition: $RELEASER = "1"
+  skip_cleanup: true
+
 language: python
 git:
   submodules: true
@@ -19,6 +21,7 @@ addons:
     - python-pip
     - python-virtualenv
     - libboost-all-dev
+
 matrix:
   include:
   - os: linux
@@ -45,6 +48,7 @@ matrix:
   - os: osx
     env: PYPY=1 PYTHON_PATH=~/pypy3.6-v7.3.0-osx64/bin/pypy3
     language: generic
+
 install:
 - |
   case $TRAVIS_OS_NAME in
@@ -69,6 +73,7 @@ install:
       pipenv install --python "$PYTHON_PATH" --skip-lock;
       ;;
     esac
+
 script:
 - pipenv run pip install pytest numpy
 - pipenv run python setup.py install
