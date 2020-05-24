@@ -122,9 +122,10 @@ When `RingBuffer.pop()` underflows, it returns whatever data could be popped:
 ```python
 from ringbuf import RingBuffer
 
-buffer = RingBuffer(format='B', capacity=10)
-overflowed = buffer.push(b'spam eggs ham')
-assert overflowed == b'ham'
+buffer = RingBuffer(format='B', capacity=13)
+buffer.push(b'spam eggs ham')
+popped = buffer.pop(buffer.capacity * 100)
+assert bytes(popped) == b'spam eggs ham'
 ```
 
 
