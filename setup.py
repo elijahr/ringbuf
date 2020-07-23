@@ -138,7 +138,7 @@ def get_ext_modules():
 
 setup(
     name='ringbuf',
-    version='2.5.1',
+    version='2.5.2',
     description='A lock-free ring buffer for Python and Cython.',
     long_description=get_readme(),
     long_description_content_type="text/markdown",
@@ -170,4 +170,5 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
         'License :: OSI Approved :: BSD License',
     ],
+    zip_safe=False,
 )
