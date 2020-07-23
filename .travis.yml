@@ -53,13 +53,13 @@ install:
 - |
   case $TRAVIS_OS_NAME in
     linux)
-      sudo pip install pipenv;
+      sudo pip install -U pipenv;
       pipenv install --python `which python` --skip-lock;
       ;;
     osx)
       brew update;
       brew install boost;
-      pip install pipenv;
+      pip install -U -I pipenv;
       ulimit -n 1200;
       pwd;
       if [ ! -z "$PYPY" ]; then
@@ -75,6 +75,6 @@ install:
     esac
 
 script:
-- pipenv run pip install pytest numpy
+- pipenv run pip install -U pytest numpy
 - pipenv run python setup.py install
 - pipenv run pytest --verbose test.py
