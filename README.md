@@ -155,9 +155,6 @@ Pull requests are welcome, please file any issues you encounter.
 
 ## Changelog
 
-### v2.5.2 2020-07-22
-* Fix egg installation issues by passing zip_safe=False.
-
 ### v2.5.0 2020-04-17
 * Added experimental support for Windows.
 

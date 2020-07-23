@@ -170,5 +170,4 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
         'License :: OSI Approved :: BSD License',
     ],
-    zip_safe=False,
 )
