@@ -144,7 +144,6 @@ Travis CI tests with the following configurations:
     * CPython3.6
     * CPython3.7
     * CPython3.8
-    * PyPy7.3.0 (3.6.9)
 
 Any platform with a C++11 compiler will probably work. Windows support has been added, but it is considered
 experimental. A pull request to test ringbuf on Windows for Travis CI would be most welcome.

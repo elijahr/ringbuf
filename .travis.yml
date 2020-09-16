@@ -45,9 +45,6 @@ matrix:
   - os: osx
     env: CPYTHON_VERSION=3.8.1 PYTHON_PATH=/usr/local/bin/python3.8
     language: generic
-  - os: osx
-    env: PYPY=1 PYTHON_PATH=~/pypy3.6-v7.3.0-osx64/bin/pypy3
-    language: generic
 
 install:
 - |
