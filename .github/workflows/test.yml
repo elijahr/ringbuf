@@ -55,13 +55,14 @@ jobs:
         run: |
           set -ueo pipefail
           brew install $DEPS_MACOS
+          brew config
 
-      - name: Cache Primes
-        id: cache-primes
+      - name: Cache apt
+        if: ${{ runner.os == 'Linux' }}
         uses: actions/cache@v3
         with:
-          path: prime-numbers
-          key: ${{ runner.os }}-primes
+          path: /var/cache/apt
+          key: cache-apt
 
       - name: Install Linux dependencies
         shell: bash
