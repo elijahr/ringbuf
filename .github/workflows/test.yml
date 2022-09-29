@@ -63,8 +63,8 @@ jobs:
         if: ${{ runner.os == 'Linux' && env.DEPS_UBUNTU }}
         run: |
           set -ueo pipefail
-          apt-get update
-          apt-get install -y $DEPS_UBUNTU
+          sudo apt-get update
+          sudo apt-get install -y $DEPS_UBUNTU
 
       - name: Install Windows dependencies
         shell: powershell
