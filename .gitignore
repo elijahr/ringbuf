@@ -143,3 +143,4 @@ Pipfile.lock
 .DS_Store
 /ringbuf/*.cpp
 /ringbuf/*.c
+/MANIFEST.in

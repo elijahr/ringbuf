@@ -43,7 +43,7 @@ from ringbuf.libc_constants import (
     ULONG_MAX,
     USHRT_MAX,
 )
-from ringbuf.ringbuf import (
+from ringbuf.ringbufcy import (
     _test_callback_void_ptr,
 )
 
