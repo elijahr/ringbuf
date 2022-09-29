@@ -339,7 +339,7 @@ def _eval_strings(values):
     ret = []
     for value in values:
         if value.startswith("eval(") and value.endswith(")"):
-            ret.append(eval(value[5:-1]))  # pylint: disable=eval-used
+            ret.append(eval(value))  # pylint: disable=eval-used
         else:
             ret.append(value)
     return ret
