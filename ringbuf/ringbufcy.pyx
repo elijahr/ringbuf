@@ -10,13 +10,10 @@ from cpython.buffer cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_ANY_CONT
 from cython.view cimport array as _Array, memoryview as _MemoryView
 from cython.parallel cimport prange
 
-
-__all__ = ['RingBuffer', 'Array', 'MemoryView', 'concatenate']
-
-
 Array = _Array
 MemoryView = _MemoryView
 
+__all__ = ["RingBuffer", "Array", "MemoryView", "concatenate", ]
 
 cdef class RingBuffer:
     def __cinit__(self, format: str, capacity: int, *args, **kwargs):
@@ -34,10 +31,10 @@ cdef class RingBuffer:
         del self.queue
 
     def pop(self, count: int) -> Union[None, MemoryView]:
-        """
-        Pops a maximum of count element from the RingBuffer.
+        """Pops a maximum of count element from the RingBuffer.
 
-        Returns either whatever data, up to count elements, could be popped, or None.
+        Returns either whatever data, up to count elements, could be
+        popped, or None.
         """
         cdef:
             size_t popped_bytes
@@ -62,8 +59,8 @@ cdef class RingBuffer:
             return None
 
     def push(self, data: Any) -> Any:
-        """
-        Pushes as many objects from data as possible, returns any remaining data.
+        """Pushes as many objects from data as possible, returns any remaining
+        data.
 
         :param data: any object which implements the Python buffer protocol.
             This includes, but is not limited to array.array, numpy.ndarray, bytes, bytearray, memoryview,
@@ -84,30 +81,25 @@ cdef class RingBuffer:
                 raise TypeError('Mismatched format in input (got %r, expected %r)' % (
                     memview.format, self.format))
 
-            PyObject_GetBuffer(memview, &py_buffer, PyBUF_SIMPLE | PyBUF_ANY_CONTIGUOUS)
+            PyObject_GetBuffer(memview, & py_buffer, PyBUF_SIMPLE | PyBUF_ANY_CONTIGUOUS)
             try:
                 with nogil:
-                    pushed = self.queue.push(<char*>py_buffer.buf, py_buffer.len)
+                    pushed = self.queue.push(< char*>py_buffer.buf, py_buffer.len)
                 if pushed != py_buffer.len:
                     return data[pushed / py_buffer.itemsize:]
             finally:
-                PyBuffer_Release(&py_buffer)
+                PyBuffer_Release(& py_buffer)
         finally:
             memview.release()
 
-
     @property
     def read_available(self) -> int:
-        """
-        Get number of elements that are available for read
-        """
+        """Get number of elements that are available for read."""
         return int(self.queue.read_available() / self.itemsize)
 
     @property
     def write_available(self) -> int:
-        """
-        Get the space available for writing.
-        """
+        """Get the space available for writing."""
         return int(self.queue.write_available() / self.itemsize)
 
     @property
@@ -117,28 +109,26 @@ cdef class RingBuffer:
     def reset(self) -> None:
         self.queue.reset()
 
-    cdef void* queue_void_ptr(self):
+    cdef void * queue_void_ptr(self):
         return spsc_queue_char_ptr_to_void_ptr(self.queue)
 
 
-cdef void _test_callback_call(_test_callback_t* callback, void* queue_):
+cdef void _test_callback_call(_test_callback_t * callback, void * queue_):
     callback(queue_)
 
 
-cdef void _test_callback_push(void* queue_):
+cdef void _test_callback_push(void * queue_):
     cdef:
         # The underlying queue always holds chars
-        spsc_queue[char] *queue = void_ptr_to_spsc_queue_char_ptr(queue_)
+        spsc_queue[char] * queue = void_ptr_to_spsc_queue_char_ptr(queue_)
         double[5] indata = [1.0, 2.0, 3.0, 4.0, 5.0]
 
     # Cast to char* and multiply # elements with size of double
-    queue.push(<char*>indata, sizeof(double) * 5)
+    queue.push(< char*>indata, sizeof(double) * 5)
 
 
 def _test_callback_void_ptr():
-    """
-    Test for casting spsc_queue from / to void pointer.
-    """
+    """Test for casting spsc_queue from / to void pointer."""
     import array
 
     buffer = RingBuffer('d', capacity=100)
@@ -148,7 +138,7 @@ def _test_callback_void_ptr():
 
 def concatenate(*items: Any) -> Array:
     cdef:
-        Py_buffer* py_buffers
+        Py_buffer * py_buffers
         size_t total
         _Array arr
         object item
@@ -161,14 +151,14 @@ def concatenate(*items: Any) -> Array:
     if not items:
         raise ValueError('concatenate requires at least one positional argument')
 
-    py_buffers = <Py_buffer*>malloc(sizeof(Py_buffer) * len(items))
+    py_buffers = <Py_buffer * >malloc(sizeof(Py_buffer) * len(items))
 
     total = sum(len(a) for a in items)
 
     try:
         for i, item in enumerate(items):
             memview = memoryview(item)
-            PyObject_GetBuffer(memview, &py_buffers[i], PyBUF_SIMPLE | PyBUF_ANY_CONTIGUOUS)
+            PyObject_GetBuffer(memview, & py_buffers[i], PyBUF_SIMPLE | PyBUF_ANY_CONTIGUOUS)
             memviews.append(memview)
 
             if memview.ndim != 1:
@@ -189,7 +179,7 @@ def concatenate(*items: Any) -> Array:
             copy_instrs.push_back(
                 copy_instr_t(
                     addr_and_size_t(arr.data, offset),
-                    addr_and_size_t(<char*>py_buffers[i].buf, py_buffers[i].len)))
+                    addr_and_size_t(< char*>py_buffers[i].buf, py_buffers[i].len)))
             offset += py_buffers[i].len
 
         # copy in parallel
@@ -198,7 +188,7 @@ def concatenate(*items: Any) -> Array:
 
     finally:
         for i, memview in enumerate(memviews):
-            PyBuffer_Release(&py_buffers[i])
+            PyBuffer_Release(& py_buffers[i])
             memview.release()
         free(py_buffers)
 
@@ -207,8 +197,8 @@ def concatenate(*items: Any) -> Array:
 
 cdef void copy_from_instr(copy_instr_t copy_instr) nogil:
     cdef:
-        char* dest = copy_instr.first.first
+        char * dest = copy_instr.first.first
         size_t offset = copy_instr.first.second
-        char* source = copy_instr.second.first
+        char * source = copy_instr.second.first
         size_t nbytes = copy_instr.second.second
-    memcpy(&dest[offset], source, nbytes)
+    memcpy(& dest[offset], source, nbytes)

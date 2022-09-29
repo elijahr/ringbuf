@@ -36,5 +36,5 @@ cdef extern from '<boost/lockfree/spsc_queue.hpp>' namespace 'boost::lockfree' n
 
 
 cdef extern from *:
-    spsc_queue[char]* void_ptr_to_spsc_queue_char_ptr 'static_cast<boost::lockfree::spsc_queue<char>*>' (void*) nogil except NULL
-    void* spsc_queue_char_ptr_to_void_ptr 'static_cast<void*>' (spsc_queue[char]*) nogil except NULL
+    spsc_queue[char] * void_ptr_to_spsc_queue_char_ptr 'static_cast<boost::lockfree::spsc_queue<char>*>' (void * ) nogil except NULL
+    void * spsc_queue_char_ptr_to_void_ptr 'static_cast<void*>' (spsc_queue[char] *) nogil except NULL

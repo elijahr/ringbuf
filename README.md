@@ -75,7 +75,7 @@ mymodule.pyx:
 from array import array
 
 from ringbuf.boost cimport spsc_queue, void_ptr_to_spsc_queue_char_ptr
-from ringbuf.ringbuf cimport RingBuffer
+from ringbuf.ringbufcy cimport RingBuffer
 
 from some_c_library cimport some_c_function
 
@@ -128,37 +128,52 @@ popped = buffer.pop(buffer.capacity * 100)
 assert bytes(popped) == b'spam eggs ham'
 ```
 
-
-
 For additional usage see the [tests](https://github.com/elijahr/ringbuf/blob/master/test.py).
 
 ## Supported platforms
 
-Travis CI tests with the following configurations:
-* Ubuntu 18.04 Bionic Beaver:
-   * CPython3.6
-   * CPython3.7
-   * CPython3.8
-   * PyPy7.3.0 (3.6.9)
-* OS X:
-    * CPython3.6
-    * CPython3.7
-    * CPython3.8
+GitHub Actions tests the following matrix:
 
-Any platform with a C++11 compiler will probably work. Windows support has been added, but it is considered
-experimental. A pull request to test ringbuf on Windows for Travis CI would be most welcome.
+- Linux:
+  - CPython 3.7
+  - CPython 3.8
+  - CPython 3.9
+  - CPython 3.10
+  - PyPy 7.3.9
+- macOS:
+  - CPython 3.10
+- Windows:
+  - CPython 3.10
+
+Any platform with a C++11 compiler and boost installed should work.
 
 ## Contributing
 
 Pull requests are welcome, please file any issues you encounter.
 
+The code is linted with [lintball](https://github.com/elijahr/lintball). There is a pre-commit hook to lint, configured by running:
+
+```shell
+npm install -g lintball
+git config --local core.hooksPath .githooks
+```
+
 ## Changelog
 
+### v2.6.0 2022-09-27
+
+- Move CI to GitHub Actions.
+- Lint codebase with lintball
+- Improve project structure
+
 ### v2.5.0 2020-04-17
-* Added experimental support for Windows.
+
+- Added experimental support for Windows.
 
 ### v2.4.0 2020-03-23
-* Added `RingBuffer.reset()` method to clear the buffer.
+
+- Added `RingBuffer.reset()` method to clear the buffer.
 
 ### v2.3.0 2020-03-22
-* Added `concatenate` function for joining multiple arbitrary Python objects that support the buffer protocol.
+
+- Added `concatenate` function for joining multiple arbitrary Python objects that support the buffer protocol.

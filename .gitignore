@@ -141,5 +141,5 @@ cython_debug
 Pipfile
 Pipfile.lock
 .DS_Store
-src/ringbuf/*.cpp
-src/ringbuf/*.c
+/ringbuf/*.cpp
+/ringbuf/*.c

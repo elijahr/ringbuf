@@ -1,0 +1,89 @@
+# yamllint disable rule:line-length
+
+name: Test
+
+# yamllint disable rule:truthy
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+# yamllint enable rule:truthy
+
+env:
+  DEPS_UBUNTU: libboost-all-dev
+  DEPS_MACOS: boost
+  DEPS_WINDOWS: boost-msvc-14.3
+
+jobs:
+  lint:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python-version: '3.7'
+          - os: ubuntu-latest
+            python-version: '3.8'
+          - os: ubuntu-latest
+            python-version: '3.9'
+          - os: ubuntu-latest
+            python-version: '3.10'
+          - os: ubuntu-latest
+            python-version: 'pypy3.9'
+          - os: macos-latest
+            python-version: '3.10'
+          - os: windows-latest
+            python-version: '3.10'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install macOS dependencies
+        shell: bash
+        if: ${{ runner.os == 'macOS' && env.DEPS_MACOS }}
+        run: |
+          set -ueo pipefail
+          brew install $DEPS_MACOS
+
+      - name: Install Linux dependencies
+        shell: bash
+        if: ${{ runner.os == 'Linux' && env.DEPS_UBUNTU }}
+        run: |
+          set -ueo pipefail
+          apt-get update
+          apt-get install -y $DEPS_UBUNTU
+
+      - name: Install Windows dependencies
+        shell: powershell
+        if: ${{ runner.os == 'Windows' && env.DEPS_WINDOWS }}
+        run: |
+          choco install $DEPS_WINDOWS
+
+      - name: Test (Unix)
+        shell: bash
+        if: ${{ runner.os != 'Windows' }}
+        run: |
+          set -ueo pipefail
+          egg=${GITHUB_REPOSITORY/[a-zA-Z0-9\-_\.]*\//}
+          pip install -e file:///$(pwd)#egg=${egg}[dev]
+          pytest
+
+      - name: Test (Windows)
+        shell: powershell
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          pip install -e .[dev]
+          pytest

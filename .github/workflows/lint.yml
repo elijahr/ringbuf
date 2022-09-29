@@ -1,0 +1,34 @@
+# yamllint disable rule:line-length
+
+name: Lint
+
+# yamllint disable rule:truthy
+on:
+  pull_request:
+    branches: ['*']
+  push:
+    branches: ['*']
+    tags: ['*']
+# yamllint enable rule:truthy
+
+jobs:
+  lint:
+    name: lint
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '15'
+
+      - name: Install lintball
+        run: |
+          npm install -g lintball
+          lintball install-tools --yes
+
+      - name: Check for linter issues
+        run: lintball check
