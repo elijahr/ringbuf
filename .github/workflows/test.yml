@@ -49,23 +49,28 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install macOS dependencies
-        shell: bash
-        if: ${{ runner.os == 'macOS' && env.DEPS_MACOS }}
-        run: |
-          set -ueo pipefail
-          brew install $DEPS_MACOS
-          brew config
-          brew --cache
-
-      - name: Cache apt
+      - name: Use package cache (Linux)
         if: ${{ runner.os == 'Linux' }}
         uses: actions/cache@v3
         with:
-          path: /var/cache/apt
-          key: cache-apt
+          path: /var/cache/apt/
+          key: packages
 
-      - name: Install Linux dependencies
+      - name: Use package cache (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        uses: actions/cache@v3
+        with:
+          path: /Users/runner/Library/Caches/Homebrew/
+          key: packages
+
+      - name: Use package cache (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        uses: actions/cache@v3
+        with:
+          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey\
+          key: packages
+
+      - name: Install packages (Linux)
         shell: bash
         if: ${{ runner.os == 'Linux' && env.DEPS_UBUNTU }}
         run: |
@@ -75,12 +80,18 @@ jobs:
           sudo apt-get -y install apt-fast
           sudo apt-fast -y install $DEPS_UBUNTU
 
-      - name: Install Windows dependencies
+      - name: Install packages (macOs)
+        shell: bash
+        if: ${{ runner.os == 'macOS' && env.DEPS_MACOS }}
+        run: |
+          set -ueo pipefail
+          brew install $DEPS_MACOS
+
+      - name: Install packages (Windows)
         shell: powershell
         if: ${{ runner.os == 'Windows' && env.DEPS_WINDOWS }}
         run: |
           choco install -y ${{ env.DEPS_WINDOWS }}
-          choco list
 
       - name: Test (Unix)
         shell: bash
