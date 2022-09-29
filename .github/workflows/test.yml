@@ -49,27 +49,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Use package cache (Linux)
-        if: ${{ runner.os == 'Linux' }}
-        uses: actions/cache@v3
-        with:
-          path: /var/cache/apt/
-          key: packages
-
-      - name: Use package cache (macOS)
-        if: ${{ runner.os == 'macOS' }}
-        uses: actions/cache@v3
-        with:
-          path: /Users/runner/Library/Caches/Homebrew/
-          key: packages
-
-      - name: Use package cache (Windows)
-        if: ${{ runner.os == 'Windows' }}
-        uses: actions/cache@v3
-        with:
-          path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey\
-          key: packages
-
       - name: Install packages (Linux)
         shell: bash
         if: ${{ runner.os == 'Linux' && env.DEPS_UBUNTU }}
@@ -97,7 +76,7 @@ jobs:
         if: ${{ runner.os == 'Windows' }}
         with:
           ngrok-authtoken: ${{ secrets.NGROK_AUTH_TOKEN }}
-          ssh-public-key: "${{ secrets.SSH_PUBLIC_KEY }}"
+          ssh-public-key: '${{ secrets.SSH_PUBLIC_KEY }}'
 
       - name: Test (Unix)
         shell: bash
