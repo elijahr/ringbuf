@@ -71,7 +71,7 @@ jobs:
         if: ${{ runner.os == 'Windows' && env.DEPS_WINDOWS }}
         run: |
           choco install --no-progress -y ${{ env.DEPS_WINDOWS }}
-          Get-ChildItem c:\local\boost_1_80_0 -Name -Recurse -File
+          (Get-ChildItem -Path 'c:\local\' -Force -Recurse -ErrorAction 'SilentlyContinue').FullName
 
       - name: Test (Unix)
         shell: bash
