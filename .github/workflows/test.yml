@@ -80,6 +80,7 @@ jobs:
         if: ${{ runner.os == 'Windows' && env.DEPS_WINDOWS }}
         run: |
           choco install -y ${{ env.DEPS_WINDOWS }}
+          choco list
 
       - name: Test (Unix)
         shell: bash
