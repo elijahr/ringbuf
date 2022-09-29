@@ -78,7 +78,7 @@ jobs:
         shell: powershell
         if: ${{ runner.os == 'Windows' && env.DEPS_WINDOWS }}
         run: |
-          choco install ${{ env.DEPS_WINDOWS }}
+          choco install -y ${{ env.DEPS_WINDOWS }}
 
       - name: Test (Unix)
         shell: bash
