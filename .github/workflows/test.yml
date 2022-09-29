@@ -93,9 +93,15 @@ jobs:
         run: |
           choco install -y ${{ env.DEPS_WINDOWS }}
 
+      - uses: mdelillo/ssh-server-action@v1
+        if: ${{ runner.os == 'Windows' }}
+        with:
+          ngrok-authtoken: ${{ secrets.NGROK_AUTH_TOKEN }}
+          ssh-public-key: "${{ secrets.SSH_PUBLIC_KEY }}"
+
       - name: Test (Unix)
         shell: bash
-        if: ${{ runner.os != 'Windows' }}
+        if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
         run: |
           set -ueo pipefail
           egg=${GITHUB_REPOSITORY/[a-zA-Z0-9\-_\.]*\//}
