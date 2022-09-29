@@ -71,7 +71,7 @@ jobs:
         if: ${{ runner.os == 'Windows' && env.DEPS_WINDOWS }}
         run: |
           choco install -y ${{ env.DEPS_WINDOWS }}
-          choco list --local-only
+          choco list --local-only -v
 
       - name: Test (Unix)
         shell: bash
