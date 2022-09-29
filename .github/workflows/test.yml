@@ -86,5 +86,6 @@ jobs:
         shell: powershell
         if: ${{ runner.os == 'Windows' }}
         run: |
+          $env:BOOST_ROOT = 'c:\local'
           pip install -e .[dev]
           pytest
