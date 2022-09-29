@@ -70,8 +70,9 @@ jobs:
         shell: powershell
         if: ${{ runner.os == 'Windows' && env.DEPS_WINDOWS }}
         run: |
-          choco install -y ${{ env.DEPS_WINDOWS }}
-          choco list --local-only -v
+          choco install --no-progress -y ${{ env.DEPS_WINDOWS }}
+          Get-ChildItem c:\local -Name
+          Get-ChildItem c:\local\boost_1_80_0 -Name
 
       - name: Test (Unix)
         shell: bash
