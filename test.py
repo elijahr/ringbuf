@@ -1,17 +1,6 @@
 #!/usr/bin/env python3
 
 # pylint: disable=no-name-in-module,redefined-outer-name,wrong-import-position
-import glob
-import os
-import sys
-
-if __name__ == "__main__":
-    build_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "build"))
-    if not os.path.exists(build_dir):
-        raise OSError(f"No such directory: {build_dir}, Run python setup.py build first")
-    module_dir = list(glob.glob(os.path.join(build_dir, "lib.*")))[0]
-    sys.path.insert(0, module_dir)
-
 import struct
 
 import numpy as np
@@ -229,7 +218,3 @@ def test_concatenate_valueerror_empty():
 
 def test_callback_void_ptr():
     _test_callback_void_ptr()
-
-
-if __name__ == "__main__":
-    sys.exit(pytest.main(sys.argv))

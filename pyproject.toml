@@ -34,3 +34,8 @@ disable = """missing-module-docstring,
 
 [tool.pylint.format]
 max-line-length = "120"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "test.py",
+]
