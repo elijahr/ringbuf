@@ -26,13 +26,14 @@ try:
         cythonize,
     )
 except ImportError as exc:
-    import subprocess
+    import pip
 
-    errno = subprocess.call([sys.executable, "-m", "pip", "install", "cython"])
-    if errno:
-        print("Please install the cython package")
-        raise SystemExit(errno) from exc
-    from Cython.Build.Dependencies import (
+    if hasattr(pip, "main"):
+        pip.main(["install", "cython"])
+    else:
+        pip._internal.main(["install", "cython"])  # pylint: disable=protected-access
+
+    from Cython.Build.Dependencies import (  # pylint: disable=ungrouped-imports
         cythonize,
     )
 

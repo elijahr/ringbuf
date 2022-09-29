@@ -63,8 +63,10 @@ jobs:
         if: ${{ runner.os == 'Linux' && env.DEPS_UBUNTU }}
         run: |
           set -ueo pipefail
+          sudo add-apt-repository ppa:apt-fast/stable
           sudo apt-get update
-          sudo apt-get install -y $DEPS_UBUNTU
+          sudo apt-get -y install apt-fast
+          sudo apt-fast -y install $DEPS_UBUNTU
 
       - name: Install Windows dependencies
         shell: powershell
