@@ -4,7 +4,7 @@ name: 'Publish - pypi.org'
 
 # yamllint disable rule:truthy
 on:
-  workflow_run:
+  workflow_dispatch:
     inputs:
 # yamllint enable rule:truthy
 
