@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "cython ~= 0.29.0"]
+requires = ["setuptools ~= 65.4.1", "cython ~= 0.29.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -29,15 +29,15 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 
-[tool.setuptools.dynamic]
-version = { attr = "ringbuf.__version__" }
-
 [tool.setuptools]
 zip-safe = false
 include-package-data = true
 packages = ["ringbuf"]
 package-dir = { "" = "." }
 license-files = ["LICENSE"]
+
+[tool.setuptools.dynamic]
+version = { attr = "ringbuf.__version__" }
 
 [tool.setuptools.package-data]
 ringbuf = ["*.pyx", "*.pxd"]
