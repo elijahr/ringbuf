@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 # pylint: disable=no-name-in-module,redefined-outer-name,wrong-import-position
+
 import struct
+import sys
 
 import numpy as np
 import pytest
@@ -35,6 +37,9 @@ from ringbuf.libc_constants import (
 from ringbuf.ringbufcy import (
     _test_callback_void_ptr,
 )
+
+# Don't attempt a relative import of ringbuf
+sys.path = sys.path[1:]
 
 
 def _expected():
