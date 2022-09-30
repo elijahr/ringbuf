@@ -2,6 +2,9 @@
 
 # pylint: disable=no-name-in-module,redefined-outer-name,wrong-import-position
 
+# This file is nested under test/ to ensure ringbuf import comes from
+# site-packages, not project directory.
+
 import struct
 
 import numpy as np

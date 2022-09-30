@@ -49,7 +49,7 @@ version = { attr = "ringbuf.__version__" }
 ringbuf = ["*.pyx", "*.pxd"]
 
 [tool.pytest.ini_options]
-testpaths = ["test.py"]
+testpaths = ["test/test.py"]
 
 # black-compatible configurations for various Python code formatters.
 # Assembled from https://black.readthedocs.io/en/stable/compatible_configs.html
