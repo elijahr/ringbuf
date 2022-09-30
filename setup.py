@@ -45,7 +45,7 @@ setup(
         ],
         gdb_debug=compile_time_env["DEBUG"],
         compile_time_env=compile_time_env,
-        compiler_directives=dict(language_level=3),
+        compiler_directives={"language_level": 3},
     ),
     extras_require={
         "dev": [
