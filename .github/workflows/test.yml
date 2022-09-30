@@ -76,7 +76,8 @@ jobs:
         if: ${{ runner.os == 'Windows' && env.DEPS_WINDOWS }}
         run: |
           choco install --no-progress -y ${{ env.DEPS_WINDOWS }}
-          (Get-ChildItem -Path 'c:\local\' -Force -Recurse -ErrorAction 'SilentlyContinue').FullName
+          ## List items in C:\local
+          # (Get-ChildItem -Path 'C:\local\' -Force -Recurse -ErrorAction 'SilentlyContinue').FullName
 
       - name: Test (Unix)
         shell: bash
