@@ -65,6 +65,11 @@ jobs:
           # sudo apt-get -y install apt-fast
           # sudo apt-fast -y install $DEPS_UBUNTU
 
+          pip3 install -v --upgrade \
+            "pip >= 22.2.2" \
+            "setuptools >= 65.4.1" \
+            "cython >= 0.29.0"
+
       - name: Install packages (macOs)
         shell: bash
         if: ${{ runner.os == 'macOS' && env.DEPS_MACOS }}
@@ -72,26 +77,27 @@ jobs:
           set -ueo pipefail
           brew install $DEPS_MACOS
           brew info $DEPS_MACOS
+          pip3 install -v --upgrade \
+            "pip >= 22.2.2" \
+            "setuptools >= 65.4.1" \
+            "cython >= 0.29.0"
 
       - name: Install packages (Windows)
         shell: powershell
         if: ${{ runner.os == 'Windows' && env.DEPS_WINDOWS }}
         run: |
           choco install --no-progress -y ${{ env.DEPS_WINDOWS }}
+
           ## List items in C:\local
           # (Get-ChildItem -Path 'C:\local\' -Force -Recurse -ErrorAction 'SilentlyContinue').FullName
+
+          pip3 install --upgrade "pip >= 22.2.2" "setuptools >= 65.4.1" "cython >= 0.29.0"
 
       - name: Test (Unix)
         shell: bash
         if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
         run: |
           set -ueo pipefail
-
-          pip3 install --upgrade \
-            "pip >= 22.2.2" \
-            "setuptools >= 65.4.1" \
-            "cython >= 0.29.0"
-
           export BOOST_ROOT='${{ matrix.boost-root }}'
           pip install .[dev]
           pytest
@@ -101,8 +107,6 @@ jobs:
         if: ${{ runner.os == 'Windows' }}
         run: |
           $env:BOOST_ROOT = '${{ matrix.boost-root }}'
-
-          pip3 install --upgrade "pip >= 22.2.2" "setuptools >= 65.4.1" "cython >= 0.29.0"
 
           pip install .[dev]
           pytest
