@@ -1,4 +1,5 @@
 import os
+import platform
 
 from Cython.Build import (
     cythonize,
@@ -21,9 +22,37 @@ except ImportError:
     ...
 
 include_dirs = []
+extra_compile_args = []
+extra_link_args = []
 
-if os.environ.get("BOOST_ROOT"):
-    include_dirs.insert(0, os.environ["BOOST_ROOT"])
+
+if boost_root := os.environ.get("BOOST_ROOT"):
+    # Try to find the include dir
+    headers = (
+        os.path.join(boost_root, "boost", "lockfree", "spsc_queue.hpp"),
+        os.path.join(boost_root, "include", "boost", "lockfree", "spsc_queue.hpp"),
+    )
+    for header in headers:
+        if os.path.exists(header):
+            include_dir = os.path.join(*header.split(os.path.sep)[:-3])
+            include_dirs.append(include_dir)
+            extra_compile_args.append(f"-I{include_dir}")
+            break
+    else:
+        raise ValueError(f"Could not find include directory in {boost_root}")
+
+    link_flag = "/LIBPATH:" if platform.system() == "Windows" else "-L"
+    lib_dirs = (
+        os.path.join(boost_root, "lib"),
+        os.path.join(boost_root, "lib64"),
+        os.path.join(boost_root, "lib32"),
+    )
+    for lib_dir in lib_dirs:
+        if os.path.exists(lib_dir):
+            extra_link_args.append(f"{link_flag}{lib_dir}")
+            break
+    else:
+        raise ValueError(f"Could not find lib directory in {boost_root}")
 
 setup(
     ext_modules=cythonize(
@@ -37,8 +66,8 @@ setup(
                 "ringbuf.ringbufcy",
                 sources=["ringbuf/ringbufcy.pyx"],
                 language="c++",
-                extra_compile_args=["-std=c++11"],
-                extra_link_args=["-std=c++11"],
+                extra_compile_args=extra_compile_args,
+                extra_link_args=extra_link_args,
                 libraries=["boost_system"],
                 include_dirs=include_dirs,
             ),
