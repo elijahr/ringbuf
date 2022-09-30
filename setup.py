@@ -47,4 +47,10 @@ setup(
         compile_time_env=compile_time_env,
         compiler_directives=dict(language_level=3),
     ),
+    extras_require={
+        "dev": [
+            "numpy >=1.0.0, <2.0.0",
+            "pytest >=7.0.0, <8.0.0",
+        ],
+    },
 )

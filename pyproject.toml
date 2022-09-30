@@ -42,13 +42,6 @@ license-files = ["LICENSE"]
 [tool.setuptools.package-data]
 ringbuf = ["*.pyx", "*.pxd"]
 
-
-[tool-setuptools.optional-dependencies]
-dev = [
-    "numpy",
-    "pytest",
-]
-
 [tool.pytest.ini_options]
 testpaths = [
     "test.py",
