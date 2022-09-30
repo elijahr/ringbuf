@@ -110,7 +110,8 @@ class build_ext_compiler_check(build_ext):
     def build_extensions(self):
         compiler_type = self.compiler.compiler_type  # usually "unix" or "msvc"
 
-        if boost_root := os.environ.get("BOOST_ROOT"):
+        boost_root = os.environ.get("BOOST_ROOT")
+        if boost_root:
             ringbufcy_ext = [e for e in self.extensions if e.name == "ringbuf.ringbufcy"][0]
 
             # Try to find the include dir
