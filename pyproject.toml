@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools ~= 65.4.1", "cython ~= 0.29.0"]
+requires = ["pip >= 22.2.2", "setuptools >= 65.4.1", "cython >= 0.29.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "ringbuf"
 authors = [
-    { name = "Elijah Shaw-Rutschman", email = "elijahr+ringbuf@gmail.com"},
+    { name = "Elijah Shaw-Rutschman", email = "elijahr+ringbuf@gmail.com" },
 ]
 maintainers = [
-    { name = "Elijah Shaw-Rutschman", email = "elijahr+ringbuf@gmail.com"},
+    { name = "Elijah Shaw-Rutschman", email = "elijahr+ringbuf@gmail.com" },
 ]
 urls = { GitHub = "https://github.com/elijahr/ringbuf", PyPI = "https://pypi.org/ringbuf" }
 license = { text = "MIT License" }

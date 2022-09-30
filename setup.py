@@ -84,6 +84,7 @@ def find_boost_system_lib_unix(boost_root):
                 os.path.join(boost_root, "lib"),
                 os.path.join(boost_root, "lib64"),
                 os.path.join(boost_root, "lib32"),
+                os.path.join(boost_root, "lib", "**"),
             ),
         )
     ):
