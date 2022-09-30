@@ -2,7 +2,7 @@
 
 A lock-free, single-producer, single-consumer, ring buffer for Python and Cython.
 
-![build_status](https://travis-ci.org/elijahr/ringbuf.svg?branch=master)
+[![Test](https://github.com/elijahr/ringbuf/actions/workflows/test.yml/badge.svg)](https://github.com/elijahr/ringbuf/actions/workflows/test.yml) [![PyPI version](https://badge.fury.io/py/ringbuf.svg)](https://badge.fury.io/py/ringbuf) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/PyCQA/pylint)
 
 ## Installation
 
