@@ -54,10 +54,15 @@ jobs:
         if: ${{ runner.os == 'Linux' && env.DEPS_UBUNTU }}
         run: |
           set -ueo pipefail
-          sudo add-apt-repository ppa:apt-fast/stable
+
           sudo apt-get update
-          sudo apt-get -y install apt-fast
-          sudo apt-fast -y install $DEPS_UBUNTU
+          sudo apt-get -y install $DEPS_UBUNTU
+
+          # # Faster but unnecessary for small amount of deps
+          # sudo add-apt-repository ppa:apt-fast/stable
+          # sudo apt-get update
+          # sudo apt-get -y install apt-fast
+          # sudo apt-fast -y install $DEPS_UBUNTU
 
       - name: Install packages (macOs)
         shell: bash
@@ -85,6 +90,6 @@ jobs:
         shell: powershell
         if: ${{ runner.os == 'Windows' }}
         run: |
-          $env:BOOST_ROOT = 'c:\local'
+          $env:BOOST_ROOT = 'C:\local\boost_1_80_0'
           pip install .[dev]
           pytest
