@@ -22,8 +22,8 @@ except ImportError:
 
 include_dirs = []
 
-if os.environ.get("BOOST_DIR"):
-    include_dirs.insert(0, os.environ["BOOST_DIR"])
+if os.environ.get("BOOST_ROOT"):
+    include_dirs.insert(0, os.environ["BOOST_ROOT"])
 
 setup(
     ext_modules=cythonize(
@@ -47,10 +47,4 @@ setup(
         compile_time_env=compile_time_env,
         compiler_directives={"language_level": 3},
     ),
-    extras_require={
-        "dev": [
-            "numpy >=1.0.0, <2.0.0",
-            "pytest >=7.0.0, <8.0.0",
-        ],
-    },
 )

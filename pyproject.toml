@@ -29,6 +29,12 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "numpy >=1.0.0",
+    "pytest >=7.0.0",
+]
+
 [tool.setuptools]
 zip-safe = false
 include-package-data = true
