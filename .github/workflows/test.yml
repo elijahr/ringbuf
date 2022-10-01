@@ -20,6 +20,27 @@ env:
   DEPS_WINDOWS: boost-msvc-14.3
 
 jobs:
+  lint:
+    name: Lint
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '15'
+
+      - name: Install lintball
+        run: |
+          npm install -g lintball
+          lintball install-tools --yes
+
+      - name: Check for linter issues
+        run: lintball check
+
   test:
     name: Test
     runs-on: ${{ matrix.os }}
@@ -42,9 +63,6 @@ jobs:
             python-version: 'pypy3.9'
           - os: macos-latest
             python-version: '3.10'
-          # - os: macos-latest
-          #   python-version: '3.10'
-          #   boost-root: ''  # Test using BOOST_ROOT on macOS
           - os: windows-latest
             python-version: '3.10'
             boost-root: 'C:\local\boost_1_80_0'
@@ -120,6 +138,7 @@ jobs:
 
   publish-test:
     name: Publish to test.pypy.org
+    needs: [lint, test]
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'push' && contains(github.event.ref, '/tags/') }}
     steps:
@@ -146,6 +165,6 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository_url: https://test.pypi.org/legacy/
-          password: ${{ secrets.PYPI_TEST_API_TOKEN }}
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           verbose: true
           print_hash: true
