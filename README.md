@@ -139,7 +139,6 @@ GitHub Actions tests the following matrix:
   - CPython 3.8
   - CPython 3.9
   - CPython 3.10
-  - PyPy 7.3.9
 - macOS:
   - CPython 3.10
 - Windows:
