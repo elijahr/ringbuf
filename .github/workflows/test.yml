@@ -117,3 +117,35 @@ jobs:
 
           pip install .[dev]
           pytest
+
+  publish-test:
+    name: Publish to test.pypy.org
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && contains(github.event.ref, '/tags/') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Build sdist
+        shell: bash
+        run: |
+          set -ueo pipefail
+
+          pip3 install -v --upgrade \
+            "pip >= 22.2.2" \
+            "setuptools >= 65.4.1" \
+            "cython >= 0.29.0"
+
+          python setup.py sdist
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository_url: https://test.pypi.org/legacy/
+          password: ${{ secrets.PYPI_TEST_API_TOKEN }}
+          verbose: true
+          print_hash: true
